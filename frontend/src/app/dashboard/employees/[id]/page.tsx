@@ -5,7 +5,6 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/lib/api";
-import { getUserById, updateUser } from "@/lib/mockStore";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,37 +42,17 @@ export default function EmployeeDetailPage() {
         const live = await api.getEmployeeById(empId);
         if (live && live.uid) {
           setEmpData(live);
-          setLoading(false);
-          return;
+        } else {
+          toast.error("Employee record not found.");
+          router.push("/dashboard/employees");
         }
-      } catch (err) {
-        console.warn("[EmployeeDetailPage] API fetch error, fallback to mockStore:", err);
-      }
-
-      // Mock fallback
-      const found = getUserById(empId);
-      if (found) {
-        setEmpData({
-          ...found,
-          gender: "PREFER_NOT_TO_SAY",
-          address: found.address || "123 Technology Park, Bengaluru, Karnataka",
-          salaryStructure: {
-            basic_salary: 60000,
-            hra: 20000,
-            allowances: 10000,
-            deductions: 5000,
-            net_salary: 85000,
-          },
-          documents: [
-            { id: "doc-1", document_type: "ID_PROOF", document_name: "Aadhaar_Card.pdf", uploaded_at: "2026-01-10" },
-            { id: "doc-2", document_type: "RESUME", document_name: "Resume_2026.pdf", uploaded_at: "2026-01-12" },
-          ],
-        });
-      } else {
-        toast.error("Employee not found");
+      } catch (err: any) {
+        console.warn("[EmployeeDetailPage] API fetch error:", err);
+        toast.error(err.message || "Failed to load employee details.");
         router.push("/dashboard/employees");
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     }
 
     loadEmployee();
@@ -123,21 +102,9 @@ export default function EmployeeDetailPage() {
       };
 
       await api.updateEmployee(params.id as string, payload);
-      updateUser(empData.uid || (params.id as string), {
-        fullName: `${payload.first_name} ${payload.last_name}`.trim(),
-        phone: payload.phone,
-        address: payload.address,
-        employmentType: payload.employment_status,
-      });
-
-      toast.success("Employee details & salary updated and saved successfully!");
+      toast.success("Employee details & salary updated and saved to database!");
     } catch (err: any) {
-      // Fallback
-      updateUser(empData.uid || (params.id as string), {
-        phone: empData.phone,
-        address: empData.address,
-      });
-      toast.success("Employee details updated in session.");
+      toast.error(err.message || "Failed to update employee details.");
     } finally {
       setSaving(false);
     }

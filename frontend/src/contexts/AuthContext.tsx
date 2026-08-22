@@ -3,7 +3,6 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { UserProfile } from "@/lib/types";
 import { api, getAuthToken, removeAuthToken } from "@/lib/api";
-import { mockLogin, mockRegister, updateUser } from "@/lib/mockStore";
 
 interface AuthContextType {
   profile: UserProfile | null;
@@ -46,9 +45,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           try {
             const userProfile = await api.getMe();
             setProfile(userProfile);
+            sessionStorage.setItem(SESSION_KEY, JSON.stringify(userProfile));
             return;
           } catch (e) {
-            // Token might be expired, fallback to cached profile
+            console.warn("[Auth] Token verification failed:", e);
           }
         }
 
@@ -72,19 +72,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const login = async (email: string, password: string): Promise<UserProfile> => {
-    try {
-      // 1. Try real backend API
-      const user = await api.login(email, password);
-      persistProfile(user);
-      return user;
-    } catch (backendError) {
-      console.warn("[Auth] Backend login error, attempting local mock fallback:", backendError);
-      // 2. Fallback to mock login if backend unavailable
-      const mockUser = mockLogin(email, password);
-      if (!mockUser) throw backendError;
-      persistProfile(mockUser);
-      return mockUser;
-    }
+    const user = await api.login(email.trim(), password);
+    persistProfile(user);
+    return user;
   };
 
   const register = async (data: {
@@ -94,16 +84,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     role: "admin" | "employee";
     password?: string;
   }): Promise<UserProfile> => {
-    try {
-      const user = await api.register(data);
-      persistProfile(user);
-      return user;
-    } catch (backendError) {
-      console.warn("[Auth] Backend register error, attempting local mock fallback:", backendError);
-      const mockUser = mockRegister(data);
-      persistProfile(mockUser);
-      return mockUser;
-    }
+    const user = await api.register(data);
+    persistProfile(user);
+    return user;
   };
 
   const logout = () => {
@@ -114,7 +97,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const updateProfile = (data: Partial<UserProfile>) => {
     if (!profile) return;
-    const updated = updateUser(profile.uid, data);
+    const updated = { ...profile, ...data };
     persistProfile(updated);
   };
 

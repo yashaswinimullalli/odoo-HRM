@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/lib/api";
-import { getAllEmployees } from "@/lib/mockStore";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
@@ -49,14 +48,11 @@ export default function EmployeesPage() {
   const loadEmployees = async () => {
     try {
       const live = await api.getEmployees();
-      if (live && live.length > 0) {
-        setEmployees(live as UserProfile[]);
-        return;
-      }
-    } catch (e) {
-      console.warn("[Employees] API fetch error, fallback to mock data:", e);
+      setEmployees(live as UserProfile[]);
+    } catch (e: any) {
+      console.warn("[Employees] API fetch error:", e);
+      toast.error(e.message || "Failed to load employees from database.");
     }
-    setEmployees(getAllEmployees());
   };
 
   useEffect(() => {
