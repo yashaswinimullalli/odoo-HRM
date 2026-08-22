@@ -3,48 +3,52 @@ const jwt = require('jsonwebtoken');
 const { pool } = require('../config/db');
 const { logAudit } = require('../utils/auditLogger');
 const { sendNotification } = require('../utils/notifier');
+const { generateLoginId } = require('../utils/idGenerator');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dayflow_hrms_super_secret_jwt_key_2026';
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
 
 /**
- * Register a new employee or HR user
- * Body: { employee_code, first_name, last_name, email, password, role, department_id, designation_id, phone }
+ * Register a new company and admin user (Company Sign Up)
+ * Body: { company_name, first_name, last_name, email, password, phone, logo_url }
  */
 const register = async (req, res, next) => {
   const client = await pool.connect();
   try {
     const {
-      employee_code,
+      company_name = 'Odoo India',
+      name,
       first_name,
       last_name,
       email,
       password,
-      role = 'EMPLOYEE',
+      phone,
+      logo_url,
+      role = 'ADMIN',
       department_id,
       designation_id,
-      phone,
-      gender,
       joining_date,
     } = req.body;
 
-    if (!email || !password || !first_name || !last_name || !employee_code) {
-      return res.status(400).json({
-        success: false,
-        message: 'employee_code, first_name, last_name, email, and password are required.',
-      });
+    // Support single 'name' field from wireframe or first_name/last_name
+    let fName = first_name;
+    let lName = last_name;
+    if (!fName && name) {
+      const parts = name.trim().split(/\s+/);
+      fName = parts[0];
+      lName = parts.slice(1).join(' ') || parts[0];
     }
 
-    if (!['ADMIN', 'HR', 'EMPLOYEE'].includes(role.toUpperCase())) {
+    if (!email || !password || !fName) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid role. Must be EMPLOYEE, HR, or ADMIN.',
+        message: 'Name, email, and password are required.',
       });
     }
 
     await client.query('BEGIN');
 
-    // Check if email or employee_code already exists
+    // Check if email already registered
     const existingUser = await client.query(
       'SELECT id FROM users WHERE email = $1',
       [email.toLowerCase().trim()]
@@ -54,14 +58,13 @@ const register = async (req, res, next) => {
       return res.status(409).json({ success: false, message: 'Email is already registered.' });
     }
 
-    const existingCode = await client.query(
-      'SELECT id FROM employees WHERE employee_code = $1',
-      [employee_code.trim()]
-    );
-    if (existingCode.rows.length > 0) {
-      await client.query('ROLLBACK');
-      return res.status(409).json({ success: false, message: 'Employee code already in use.' });
-    }
+    // Auto-generate Login ID / Employee Code if not supplied
+    const loginId = await generateLoginId({
+      companyName: company_name,
+      firstName: fName,
+      lastName: lName || '',
+      joiningDate: joining_date || new Date(),
+    });
 
     // Hash password
     const saltRounds = 10;
@@ -76,19 +79,18 @@ const register = async (req, res, next) => {
     );
     const newUser = userRes.rows[0];
 
-    // Insert employee profile
+    // Insert employee profile with auto-generated login ID
     const empRes = await client.query(
       `INSERT INTO employees (
-        user_id, employee_code, first_name, last_name, gender, 
+        user_id, employee_code, first_name, last_name, 
         phone, department_id, designation_id, joining_date, employment_status
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'ACTIVE')
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'ACTIVE')
       RETURNING id, employee_code, first_name, last_name, department_id, designation_id, joining_date`,
       [
         newUser.id,
-        employee_code.trim(),
-        first_name.trim(),
-        last_name.trim(),
-        gender || 'PREFER_NOT_TO_SAY',
+        loginId,
+        fName.trim(),
+        (lName || '').trim(),
         phone || null,
         department_id || null,
         designation_id || null,
@@ -100,31 +102,21 @@ const register = async (req, res, next) => {
     // Initialize default salary structure
     await client.query(
       `INSERT INTO salary_structures (employee_id, basic_salary, hra, allowances, deductions, net_salary, currency)
-       VALUES ($1, 25000.00, 12500.00, 10000.00, 2500.00, 45000.00, 'INR')
+       VALUES ($1, 75000.00, 25000.00, 15000.00, 5000.00, 110000.00, 'INR')
        ON CONFLICT (employee_id) DO NOTHING`,
       [newEmp.id]
     );
 
+    // Initial audit log
+    await client.query(
+      `INSERT INTO audit_logs (user_id, action, entity_type, entity_id, details)
+       VALUES ($1, 'COMPANY_SIGNUP', 'USER', $2, $3)`,
+      [newUser.id, String(newUser.id), JSON.stringify({ email: newUser.email, login_id: loginId, company_name })]
+    );
+
     await client.query('COMMIT');
 
-    // Audit log
-    await logAudit({
-      userId: newUser.id,
-      action: 'USER_REGISTER',
-      entityType: 'USER',
-      entityId: newUser.id,
-      details: { email: newUser.email, role: newUser.role, employee_code: newEmp.employee_code },
-      ipAddress: req.ip,
-    });
-
-    // Welcome Notification
-    await sendNotification({
-      userId: newUser.id,
-      title: 'Welcome to Dayflow HRMS!',
-      message: `Hello ${first_name}, your account (${newEmp.employee_code}) has been created successfully.`,
-    });
-
-    // Generate JWT
+    // Generate JWT token
     const token = jwt.sign(
       { userId: newUser.id, email: newUser.email, role: newUser.role, employeeId: newEmp.id },
       JWT_SECRET,
@@ -133,7 +125,8 @@ const register = async (req, res, next) => {
 
     res.status(201).json({
       success: true,
-      message: 'User registered successfully.',
+      message: 'Company and Admin account registered successfully.',
+      login_id: loginId,
       token,
       user: {
         id: newUser.id,
@@ -151,20 +144,22 @@ const register = async (req, res, next) => {
 };
 
 /**
- * Sign in with email and password
- * Body: { email, password }
+ * Sign in with Login ID or Email and password
+ * Body: { identifier (or email), password }
  */
 const login = async (req, res, next) => {
   try {
-    const { email, password } = req.body;
+    const { identifier, email, password } = req.body;
+    const loginKey = (identifier || email || '').trim();
 
-    if (!email || !password) {
+    if (!loginKey || !password) {
       return res.status(400).json({
         success: false,
-        message: 'Please provide both email and password.',
+        message: 'Please provide your Login ID/Email and password.',
       });
     }
 
+    // Query by either email or employee_code (Login ID)
     const query = `
       SELECT 
         u.id AS user_id,
@@ -184,14 +179,14 @@ const login = async (req, res, next) => {
       LEFT JOIN employees e ON u.id = e.user_id
       LEFT JOIN departments d ON e.department_id = d.id
       LEFT JOIN designations ds ON e.designation_id = ds.id
-      WHERE LOWER(u.email) = LOWER($1)
+      WHERE LOWER(u.email) = LOWER($1) OR UPPER(e.employee_code) = UPPER($1)
     `;
-    const result = await pool.query(query, [email.trim()]);
+    const result = await pool.query(query, [loginKey]);
 
     if (result.rows.length === 0) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid email or password.',
+        message: 'Invalid Login ID/Email or password.',
       });
     }
 
@@ -209,7 +204,7 @@ const login = async (req, res, next) => {
     if (!isPasswordValid) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid email or password.',
+        message: 'Invalid Login ID/Email or password.',
       });
     }
 
@@ -225,35 +220,36 @@ const login = async (req, res, next) => {
       { expiresIn: JWT_EXPIRES_IN }
     );
 
-    // Audit log
+    // Audit login
     await logAudit({
       userId: user.user_id,
       action: 'USER_LOGIN',
       entityType: 'USER',
       entityId: user.user_id,
-      details: { email: user.email, role: user.role },
+      details: { email: user.email, login_id: user.employee_code },
       ipAddress: req.ip,
     });
 
     res.json({
       success: true,
-      message: 'Signed in successfully.',
+      message: 'Login successful.',
       token,
       user: {
         id: user.user_id,
         email: user.email,
         role: user.role,
         is_verified: user.is_verified,
-        employee: {
-          id: user.employee_id,
-          employee_code: user.employee_code,
-          first_name: user.first_name,
-          last_name: user.last_name,
-          full_name: `${user.first_name} ${user.last_name}`,
-          profile_picture_url: user.profile_picture_url,
-          department: user.department,
-          designation: user.designation,
-        },
+        employee: user.employee_id
+          ? {
+              id: user.employee_id,
+              employee_code: user.employee_code,
+              first_name: user.first_name,
+              last_name: user.last_name,
+              profile_picture_url: user.profile_picture_url,
+              department_name: user.department,
+              designation_title: user.designation,
+            }
+          : null,
       },
     });
   } catch (err) {
@@ -262,10 +258,12 @@ const login = async (req, res, next) => {
 };
 
 /**
- * Get current authenticated session user profile
+ * Get current authenticated user profile
  */
 const getMe = async (req, res, next) => {
   try {
+    const userId = req.user.user_id;
+
     const query = `
       SELECT 
         u.id AS user_id,
@@ -279,68 +277,62 @@ const getMe = async (req, res, next) => {
         e.first_name,
         e.last_name,
         e.gender,
-        e.date_of_birth,
         e.phone,
-        e.address,
+        e.current_address,
         e.joining_date,
-        e.profile_picture_url,
         e.employment_status,
+        e.profile_picture_url,
+        e.bank_account_number,
+        e.bank_name,
+        e.pan_number,
         d.id AS department_id,
         d.name AS department_name,
         ds.id AS designation_id,
-        ds.title AS designation_title,
-        s.basic_salary,
-        s.hra,
-        s.allowances,
-        s.deductions,
-        s.net_salary,
-        s.currency
+        ds.title AS designation_title
       FROM users u
       LEFT JOIN employees e ON u.id = e.user_id
       LEFT JOIN departments d ON e.department_id = d.id
       LEFT JOIN designations ds ON e.designation_id = ds.id
-      LEFT JOIN salary_structures s ON e.id = s.employee_id
       WHERE u.id = $1
     `;
-    const result = await pool.query(query, [req.user.user_id]);
+    const result = await pool.query(query, [userId]);
 
     if (result.rows.length === 0) {
       return res.status(404).json({ success: false, message: 'User not found.' });
     }
 
     const row = result.rows[0];
+
     res.json({
       success: true,
       user: {
         id: row.user_id,
         email: row.email,
         role: row.role,
+        is_active: row.is_active,
         is_verified: row.is_verified,
         created_at: row.created_at,
-        employee: {
-          id: row.employee_id,
-          employee_code: row.employee_code,
-          first_name: row.first_name,
-          last_name: row.last_name,
-          full_name: `${row.first_name} ${row.last_name}`,
-          gender: row.gender,
-          date_of_birth: row.date_of_birth,
-          phone: row.phone,
-          address: row.address,
-          joining_date: row.joining_date,
-          profile_picture_url: row.profile_picture_url,
-          employment_status: row.employment_status,
-          department: { id: row.department_id, name: row.department_name },
-          designation: { id: row.designation_id, title: row.designation_title },
-          salary: {
-            basic_salary: row.basic_salary,
-            hra: row.hra,
-            allowances: row.allowances,
-            deductions: row.deductions,
-            net_salary: row.net_salary,
-            currency: row.currency,
-          },
-        },
+        employee: row.employee_id
+          ? {
+              id: row.employee_id,
+              employee_code: row.employee_code,
+              first_name: row.first_name,
+              last_name: row.last_name,
+              gender: row.gender,
+              phone_number: row.phone,
+              current_address: row.current_address,
+              joining_date: row.joining_date,
+              employment_status: row.employment_status,
+              profile_picture_url: row.profile_picture_url,
+              department_id: row.department_id,
+              department_name: row.department_name,
+              designation_id: row.designation_id,
+              designation_title: row.designation_title,
+              bank_account_number: row.bank_account_number,
+              bank_name: row.bank_name,
+              pan_number: row.pan_number,
+            }
+          : null,
       },
     });
   } catch (err) {
@@ -349,16 +341,48 @@ const getMe = async (req, res, next) => {
 };
 
 /**
- * Verify user email
+ * Change Password (for first-time login or security updates)
  */
-const verifyEmail = async (req, res, next) => {
+const changePassword = async (req, res, next) => {
   try {
     const userId = req.user.user_id;
-    await pool.query('UPDATE users SET is_verified = TRUE WHERE id = $1', [userId]);
+    const { current_password, new_password } = req.body;
+
+    if (!new_password || new_password.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'New password must be at least 6 characters.',
+      });
+    }
+
+    const userRes = await pool.query('SELECT password_hash FROM users WHERE id = $1', [userId]);
+    if (userRes.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'User not found.' });
+    }
+
+    // If current_password is provided, verify it
+    if (current_password) {
+      const match = await bcrypt.compare(current_password, userRes.rows[0].password_hash);
+      if (!match) {
+        return res.status(400).json({ success: false, message: 'Current password does not match.' });
+      }
+    }
+
+    const hashed = await bcrypt.hash(new_password, 10);
+    await pool.query('UPDATE users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [hashed, userId]);
+
+    await logAudit({
+      userId,
+      action: 'CHANGE_PASSWORD',
+      entityType: 'USER',
+      entityId: userId,
+      details: { updated: true },
+      ipAddress: req.ip,
+    });
 
     res.json({
       success: true,
-      message: 'Email verified successfully.',
+      message: 'Password updated successfully.',
     });
   } catch (err) {
     next(err);
@@ -369,5 +393,5 @@ module.exports = {
   register,
   login,
   getMe,
-  verifyEmail,
+  changePassword,
 };

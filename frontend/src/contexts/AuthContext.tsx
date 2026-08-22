@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { UserProfile } from "@/lib/types";
+import { api, getAuthToken, removeAuthToken } from "@/lib/api";
 import { mockLogin, mockRegister, updateUser } from "@/lib/mockStore";
 
 interface AuthContextType {
@@ -13,6 +14,7 @@ interface AuthContextType {
     employeeId: string;
     email: string;
     role: "admin" | "employee";
+    password?: string;
   }) => Promise<UserProfile>;
   logout: () => void;
   updateProfile: (data: Partial<UserProfile>) => void;
@@ -35,18 +37,33 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Restore session from sessionStorage on mount
+  // Restore session from token or sessionStorage on mount
   useEffect(() => {
-    try {
-      const storedProfile = sessionStorage.getItem(SESSION_KEY);
-      if (storedProfile) {
-        setProfile(JSON.parse(storedProfile));
+    async function restoreSession() {
+      try {
+        const token = getAuthToken();
+        if (token) {
+          try {
+            const userProfile = await api.getMe();
+            setProfile(userProfile);
+            return;
+          } catch (e) {
+            // Token might be expired, fallback to cached profile
+          }
+        }
+
+        const storedProfile = sessionStorage.getItem(SESSION_KEY);
+        if (storedProfile) {
+          setProfile(JSON.parse(storedProfile));
+        }
+      } catch {
+        // ignore
+      } finally {
+        setLoading(false);
       }
-    } catch {
-      // ignore
-    } finally {
-      setLoading(false);
     }
+
+    restoreSession();
   }, []);
 
   const persistProfile = (user: UserProfile) => {
@@ -55,12 +72,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const login = async (email: string, password: string): Promise<UserProfile> => {
-    // Simulate async delay
-    await new Promise((r) => setTimeout(r, 600));
-    const user = mockLogin(email, password);
-    if (!user) throw new Error("Invalid email or password.");
-    persistProfile(user);
-    return user;
+    try {
+      // 1. Try real backend API
+      const user = await api.login(email, password);
+      persistProfile(user);
+      return user;
+    } catch (backendError) {
+      console.warn("[Auth] Backend login error, attempting local mock fallback:", backendError);
+      // 2. Fallback to mock login if backend unavailable
+      const mockUser = mockLogin(email, password);
+      if (!mockUser) throw backendError;
+      persistProfile(mockUser);
+      return mockUser;
+    }
   };
 
   const register = async (data: {
@@ -68,15 +92,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     employeeId: string;
     email: string;
     role: "admin" | "employee";
+    password?: string;
   }): Promise<UserProfile> => {
-    await new Promise((r) => setTimeout(r, 600));
-    const user = mockRegister(data);
-    persistProfile(user);
-    return user;
+    try {
+      const user = await api.register(data);
+      persistProfile(user);
+      return user;
+    } catch (backendError) {
+      console.warn("[Auth] Backend register error, attempting local mock fallback:", backendError);
+      const mockUser = mockRegister(data);
+      persistProfile(mockUser);
+      return mockUser;
+    }
   };
 
   const logout = () => {
     setProfile(null);
+    removeAuthToken();
     sessionStorage.removeItem(SESSION_KEY);
   };
 

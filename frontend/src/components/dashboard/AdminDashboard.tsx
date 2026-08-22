@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Users, UserCheck, UserX, Clock, CalendarOff, Loader2 } from "lucide-react";
+import { Users, UserCheck, UserX, Clock, CalendarOff, AlertTriangle } from "lucide-react";
+import { api } from "@/lib/api";
 import { getAllEmployees, getAllLeaves, getAttendanceByDate } from "@/lib/mockStore";
 import { format } from "date-fns";
 import Link from "next/link";
@@ -17,20 +18,54 @@ export function AdminDashboard() {
   const [recentAttendance, setRecentAttendance] = useState<any[]>([]);
 
   useEffect(() => {
-    const today = format(new Date(), "yyyy-MM-dd");
-    const employees = getAllEmployees();
-    const todayAtt = getAttendanceByDate(today);
-    const allLeaves = getAllLeaves();
+    async function loadAdminData() {
+      try {
+        const res = await api.getAdminDashboard();
+        if (res.success && res.data) {
+          const d = res.data;
+          const s = d.summary || {};
+          const att = d.today_attendance || {};
+          setStats({
+            total: parseInt(s.total_active_employees, 10) || 0,
+            present: parseInt(att.present_count, 10) || 0,
+            absent: parseInt(att.absent_count, 10) || 0,
+            halfDay: parseInt(att.half_day_count, 10) || 0,
+            onLeave: parseInt(att.on_leave_count, 10) || 0,
+            pendingLeaves: parseInt(s.pending_leave_requests, 10) || 0,
+          });
+          if (d.pending_leaves) {
+            setPendingLeaves(d.pending_leaves.map((l: any) => ({
+              id: String(l.id),
+              employeeName: l.employee_name,
+              leaveType: l.leave_type === "PAID" ? "Paid Leave" : l.leave_type === "SICK" ? "Sick Leave" : "Unpaid Leave",
+              startDate: l.start_date ? l.start_date.split("T")[0] : "",
+              endDate: l.end_date ? l.end_date.split("T")[0] : "",
+            })));
+          }
+          return;
+        }
+      } catch (err) {
+        console.warn("[AdminDashboard] API fetch failed, fallback to mock data:", err);
+      }
 
-    const present = todayAtt.filter((a) => a.status === "Present").length;
-    const halfDay = todayAtt.filter((a) => a.status === "Half-day").length;
-    const onLeave = todayAtt.filter((a) => a.status === "Leave").length;
-    const absent = employees.length - todayAtt.length;
-    const pendingCount = allLeaves.filter((l) => l.status === "Pending").length;
+      // Mock fallback
+      const today = format(new Date(), "yyyy-MM-dd");
+      const employees = getAllEmployees();
+      const todayAtt = getAttendanceByDate(today);
+      const allLeaves = getAllLeaves();
 
-    setStats({ total: employees.length, present, absent, halfDay, onLeave, pendingLeaves: pendingCount });
-    setPendingLeaves(allLeaves.filter((l) => l.status === "Pending").slice(0, 4));
-    setRecentAttendance(todayAtt.slice(0, 5));
+      const present = todayAtt.filter((a) => a.status === "Present").length;
+      const halfDay = todayAtt.filter((a) => a.status === "Half-day").length;
+      const onLeave = todayAtt.filter((a) => a.status === "Leave").length;
+      const absent = employees.length - todayAtt.length;
+      const pendingCount = allLeaves.filter((l) => l.status === "Pending").length;
+
+      setStats({ total: employees.length, present, absent, halfDay, onLeave, pendingLeaves: pendingCount });
+      setPendingLeaves(allLeaves.filter((l) => l.status === "Pending").slice(0, 4));
+      setRecentAttendance(todayAtt.slice(0, 5));
+    }
+
+    loadAdminData();
   }, []);
 
   const statCards = [
@@ -39,7 +74,7 @@ export function AdminDashboard() {
     { title: "Absent Today", value: stats.absent, icon: UserX, color: "text-red-400", bg: "bg-red-400/10" },
     { title: "Half Day", value: stats.halfDay, icon: Clock, color: "text-orange-400", bg: "bg-orange-400/10" },
     { title: "On Leave", value: stats.onLeave, icon: CalendarOff, color: "text-purple-400", bg: "bg-purple-400/10" },
-    { title: "Pending Approvals", value: stats.pendingLeaves, icon: CalendarOff, color: "text-yellow-400", bg: "bg-yellow-400/10" },
+    { title: "Pending Approvals", value: stats.pendingLeaves, icon: AlertTriangle, color: "text-yellow-400", bg: "bg-yellow-400/10" },
   ];
 
   const statusBadge = (status: string) => {
@@ -76,7 +111,7 @@ export function AdminDashboard() {
         {/* Today's Attendance */}
         <Card className="bg-zinc-900 border-zinc-800">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-white text-base">Today's Attendance</CardTitle>
+            <CardTitle className="text-white text-base">Today's Attendance Overview</CardTitle>
             <Link href="/dashboard/attendance">
               <Button variant="ghost" size="sm" className="text-purple-400 hover:text-purple-300 text-xs">View All</Button>
             </Link>
@@ -84,7 +119,10 @@ export function AdminDashboard() {
           <CardContent>
             <div className="space-y-3">
               {recentAttendance.length === 0 && (
-                <p className="text-sm text-zinc-500 py-4 text-center">No attendance records for today.</p>
+                <div className="py-4 text-center">
+                  <p className="text-sm text-zinc-400">Total present today: <strong className="text-green-400">{stats.present}</strong></p>
+                  <p className="text-xs text-zinc-500 mt-1">Visit the Attendance tab for complete daily rosters.</p>
+                </div>
               )}
               {recentAttendance.map((a) => (
                 <div key={a.id} className="flex items-center justify-between py-2 border-b border-zinc-800 last:border-0">

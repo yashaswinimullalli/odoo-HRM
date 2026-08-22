@@ -4,14 +4,15 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Clock, Calendar, LogIn, LogOut, User, FileText } from "lucide-react";
+import { Clock, Calendar, LogIn, LogOut, User, FileText, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { api } from "@/lib/api";
 import {
   getTodayAttendance,
   getLeavesByUser,
   getPayrollByUser,
-  checkIn,
-  checkOut,
+  checkIn as mockCheckIn,
+  checkOut as mockCheckOut,
 } from "@/lib/mockStore";
 import { format } from "date-fns";
 import Link from "next/link";
@@ -27,36 +28,86 @@ export function EmployeeDashboard() {
 
   useEffect(() => {
     if (!profile) return;
-    const att = getTodayAttendance(profile.uid);
-    setTodayRecord(att ?? null);
 
-    const leaves = getLeavesByUser(profile.uid);
-    setPendingLeaves(leaves.filter((l) => l.status === "Pending").length);
+    async function loadData() {
+      try {
+        const dashRes = await api.getEmployeeDashboard();
+        if (dashRes.success && dashRes.data) {
+          const d = dashRes.data;
+          if (d.today_attendance && d.today_attendance.status !== "NOT_CHECKED_IN") {
+            setTodayRecord({
+              id: String(d.today_attendance.id),
+              userId: profile.uid,
+              employeeId: profile.employeeId,
+              employeeName: profile.fullName,
+              date: d.today_attendance.date,
+              checkInTime: d.today_attendance.check_in ? d.today_attendance.check_in.substring(11, 16) : null,
+              checkOutTime: d.today_attendance.check_out ? d.today_attendance.check_out.substring(11, 16) : null,
+              totalWorkingHours: d.today_attendance.working_hours ? `${d.today_attendance.working_hours}h` : null,
+              status: d.today_attendance.status === "HALF_DAY" ? "Half-day" : d.today_attendance.status === "LEAVE" ? "Leave" : "Present",
+            });
+          }
+          if (d.recent_leaves) {
+            setPendingLeaves(d.recent_leaves.filter((l: any) => l.status === "PENDING").length);
+          }
+          if (d.latest_payroll) {
+            setLatestSalary({
+              netSalary: parseFloat(d.latest_payroll.net_salary),
+              basicSalary: parseFloat(d.latest_payroll.basic_salary || 0),
+              allowances: parseFloat(d.latest_payroll.allowances || 0) + parseFloat(d.latest_payroll.hra || 0),
+              deductions: parseFloat(d.latest_payroll.deductions || 0),
+            });
+          }
+          return;
+        }
+      } catch (err) {
+        console.warn("[EmployeeDashboard] API fetch failed, using fallback mock data:", err);
+      }
 
-    const pay = getPayrollByUser(profile.uid);
-    setLatestSalary(pay[0] ?? null);
+      // Fallback
+      const att = getTodayAttendance(profile.uid);
+      setTodayRecord(att ?? null);
+      const leaves = getLeavesByUser(profile.uid);
+      setPendingLeaves(leaves.filter((l) => l.status === "Pending").length);
+      const pay = getPayrollByUser(profile.uid);
+      setLatestSalary(pay[0] ?? null);
+    }
+
+    loadData();
   }, [profile]);
 
-  const handleCheckIn = () => {
+  const handleCheckIn = async () => {
     if (!profile) return;
     setLoading(true);
-    setTimeout(() => {
-      const record = checkIn(profile.uid, profile);
+    try {
+      const record = await api.checkIn();
+      setTodayRecord(record);
+      toast.success(`Checked in successfully at ${record.checkInTime || "now"}!`);
+    } catch (err: any) {
+      // Mock fallback
+      const record = mockCheckIn(profile.uid, profile);
       setTodayRecord(record);
       toast.success(`Checked in at ${record.checkInTime}`);
+    } finally {
       setLoading(false);
-    }, 500);
+    }
   };
 
-  const handleCheckOut = () => {
+  const handleCheckOut = async () => {
     if (!todayRecord) return;
     setLoading(true);
-    setTimeout(() => {
-      const updated = checkOut(todayRecord.id);
+    try {
+      const updated = await api.checkOut();
       setTodayRecord(updated);
       toast.success(`Checked out at ${updated.checkOutTime} · ${updated.totalWorkingHours} hrs worked`);
+    } catch (err: any) {
+      // Mock fallback
+      const updated = mockCheckOut(todayRecord.id);
+      setTodayRecord(updated);
+      toast.success(`Checked out at ${updated.checkOutTime} · ${updated.totalWorkingHours} hrs worked`);
+    } finally {
       setLoading(false);
-    }, 500);
+    }
   };
 
   const today = format(new Date(), "EEEE, MMMM do yyyy");
@@ -85,7 +136,7 @@ export function EmployeeDashboard() {
             disabled={loading || !!todayRecord}
             className="bg-purple-600 hover:bg-purple-700 text-white gap-2"
           >
-            <LogIn className="h-4 w-4" />
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogIn className="h-4 w-4" />}
             {todayRecord ? "Checked In" : "Check In"}
           </Button>
           <Button
@@ -150,9 +201,9 @@ export function EmployeeDashboard() {
           <CardContent>
             {latestSalary ? (
               <div>
-                <p className="text-3xl font-bold text-white">${latestSalary.netSalary.toLocaleString()}</p>
+                <p className="text-3xl font-bold text-white">₹{latestSalary.netSalary.toLocaleString()}</p>
                 <p className="text-xs text-zinc-500 mt-1">
-                  Basic: ${latestSalary.basicSalary.toLocaleString()} + Allowances: ${latestSalary.allowances.toLocaleString()} - Deductions: ${latestSalary.deductions.toLocaleString()}
+                  Basic: ₹{latestSalary.basicSalary.toLocaleString()} + Allowances: ₹{latestSalary.allowances.toLocaleString()} - Deductions: ₹{latestSalary.deductions.toLocaleString()}
                 </p>
               </div>
             ) : (

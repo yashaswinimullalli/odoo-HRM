@@ -1,6 +1,8 @@
+const bcrypt = require('bcrypt');
 const { pool } = require('../config/db');
 const { logAudit } = require('../utils/auditLogger');
 const { sendNotification } = require('../utils/notifier');
+const { generateLoginId, generateTemporaryPassword } = require('../utils/idGenerator');
 
 /**
  * List all employees with search & filter (Admin / HR)
@@ -105,6 +107,13 @@ const getEmployeeById = async (req, res, next) => {
         e.joining_date,
         e.profile_picture_url,
         e.employment_status,
+        e.bank_account_number,
+        e.bank_name,
+        e.bank_ifsc_code,
+        e.pan_number,
+        e.emergency_contact_name,
+        e.emergency_contact_phone,
+        e.marital_status,
         e.created_at,
         e.updated_at,
         u.email,
@@ -163,6 +172,13 @@ const getEmployeeById = async (req, res, next) => {
         joining_date: emp.joining_date,
         profile_picture_url: emp.profile_picture_url,
         employment_status: emp.employment_status,
+        bank_account_number: emp.bank_account_number,
+        bank_name: emp.bank_name,
+        bank_ifsc_code: emp.bank_ifsc_code,
+        pan_number: emp.pan_number,
+        emergency_contact_name: emp.emergency_contact_name,
+        emergency_contact_phone: emp.emergency_contact_phone,
+        marital_status: emp.marital_status,
         department: { id: emp.department_id, name: emp.department_name },
         designation: { id: emp.designation_id, title: emp.designation_title },
         salary_structure: {
@@ -180,6 +196,165 @@ const getEmployeeById = async (req, res, next) => {
     });
   } catch (err) {
     next(err);
+  }
+};
+
+/**
+ * Admin / HR create a new employee with auto-generated Login ID & temporary password
+ */
+const createEmployee = async (req, res, next) => {
+  const client = await pool.connect();
+  try {
+    const {
+      first_name,
+      last_name,
+      name,
+      email,
+      phone,
+      gender = 'PREFER_NOT_TO_SAY',
+      date_of_birth,
+      address,
+      department_id,
+      designation_id,
+      joining_date,
+      role = 'EMPLOYEE',
+      basic_salary = 50000,
+      hra = 15000,
+      allowances = 5000,
+      deductions = 3000,
+      company_name = 'Odoo India',
+    } = req.body;
+
+    let fName = first_name;
+    let lName = last_name;
+    if (!fName && name) {
+      const parts = name.trim().split(/\s+/);
+      fName = parts[0];
+      lName = parts.slice(1).join(' ') || '';
+    }
+
+    if (!email || !fName) {
+      return res.status(400).json({
+        success: false,
+        message: 'Name and Email are required to create an employee.',
+      });
+    }
+
+    await client.query('BEGIN');
+
+    // Check if email already registered
+    const existing = await client.query('SELECT id FROM users WHERE email = $1', [email.toLowerCase().trim()]);
+    if (existing.rows.length > 0) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ success: false, message: 'Email address already exists in system.' });
+    }
+
+    // Auto-generate Login ID based on formula: [CompanyPrefix][First2First][First2Last][Year][Serial]
+    const loginId = await generateLoginId({
+      companyName: company_name,
+      firstName: fName,
+      lastName: lName || '',
+      joiningDate: joining_date || new Date(),
+    });
+
+    // Auto-generate secure initial password
+    const tempPassword = generateTemporaryPassword();
+    const passwordHash = await bcrypt.hash(tempPassword, 10);
+
+    // Insert user
+    const userRes = await client.query(
+      `INSERT INTO users (email, password_hash, role, is_active, is_verified)
+       VALUES ($1, $2, $3, TRUE, TRUE)
+       RETURNING id, email, role, created_at`,
+      [email.toLowerCase().trim(), passwordHash, role.toUpperCase()]
+    );
+    const newUser = userRes.rows[0];
+
+    // Insert employee
+    const empRes = await client.query(
+      `INSERT INTO employees (
+        user_id, employee_code, first_name, last_name, gender, 
+        date_of_birth, phone, address, department_id, designation_id, 
+        joining_date, employment_status
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'ACTIVE')
+      RETURNING *`,
+      [
+        newUser.id,
+        loginId,
+        fName.trim(),
+        (lName || '').trim(),
+        gender,
+        date_of_birth || null,
+        phone || null,
+        address || null,
+        department_id || null,
+        designation_id || null,
+        joining_date || new Date().toISOString().split('T')[0],
+      ]
+    );
+    const newEmp = empRes.rows[0];
+
+    // Insert salary structure
+    const basic = parseFloat(basic_salary) || 0;
+    const h = parseFloat(hra) || 0;
+    const allow = parseFloat(allowances) || 0;
+    const ded = parseFloat(deductions) || 0;
+    const net = basic + h + allow - ded;
+
+    await client.query(
+      `INSERT INTO salary_structures (employee_id, basic_salary, hra, allowances, deductions, net_salary, currency)
+       VALUES ($1, $2, $3, $4, $5, $6, 'INR')`,
+      [newEmp.id, basic, h, allow, ded, net]
+    );
+
+    await client.query('COMMIT');
+
+    // Audit log
+    await logAudit({
+      userId: req.user.user_id,
+      action: 'CREATE_EMPLOYEE',
+      entityType: 'EMPLOYEE',
+      entityId: newEmp.id,
+      details: { email: newUser.email, login_id: loginId, created_by: req.user.email },
+      ipAddress: req.ip,
+    });
+
+    // Notify employee of account creation with Login ID and Temporary Password
+    await sendNotification({
+      userId: newUser.id,
+      title: 'Welcome to Dayflow HRMS!',
+      message: `Your account has been created. Login ID: ${loginId} | Temporary Password: ${tempPassword}. Please sign in and change your password.`,
+      notificationType: 'GENERAL',
+      relatedEntityType: 'EMPLOYEE',
+      relatedEntityId: newEmp.id,
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Employee created successfully with auto-generated Login ID.',
+      employee: {
+        id: newEmp.id,
+        user_id: newUser.id,
+        employee_code: loginId,
+        first_name: newEmp.first_name,
+        last_name: newEmp.last_name,
+        full_name: `${newEmp.first_name} ${newEmp.last_name}`.trim(),
+        email: newUser.email,
+        role: newUser.role,
+        department_id: newEmp.department_id,
+        designation_id: newEmp.designation_id,
+        joining_date: newEmp.joining_date,
+      },
+      credentials: {
+        login_id: loginId,
+        temporary_password: tempPassword,
+      },
+    });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    next(err);
+  } finally {
+    client.release();
   }
 };
 
@@ -227,7 +402,7 @@ const updateMyProfile = async (req, res, next) => {
 };
 
 /**
- * Admin / HR updates all employee details
+ * Admin / HR updates all employee details & compensation
  */
 const updateEmployeeByAdmin = async (req, res, next) => {
   const client = await pool.connect();
@@ -249,6 +424,13 @@ const updateEmployeeByAdmin = async (req, res, next) => {
       hra,
       allowances,
       deductions,
+      bank_account_number,
+      bank_name,
+      bank_ifsc_code,
+      pan_number,
+      emergency_contact_name,
+      emergency_contact_phone,
+      marital_status,
     } = req.body;
 
     await client.query('BEGIN');
@@ -267,8 +449,15 @@ const updateEmployeeByAdmin = async (req, res, next) => {
         joining_date = COALESCE($9, joining_date),
         profile_picture_url = COALESCE($10, profile_picture_url),
         employment_status = COALESCE($11, employment_status),
+        bank_account_number = COALESCE($12, bank_account_number),
+        bank_name = COALESCE($13, bank_name),
+        bank_ifsc_code = COALESCE($14, bank_ifsc_code),
+        pan_number = COALESCE($15, pan_number),
+        emergency_contact_name = COALESCE($16, emergency_contact_name),
+        emergency_contact_phone = COALESCE($17, emergency_contact_phone),
+        marital_status = COALESCE($18, marital_status),
         updated_at = CURRENT_TIMESTAMP
-      WHERE id = $12
+      WHERE id = $19
       RETURNING *
     `;
     const empRes = await client.query(updateEmpQuery, [
@@ -283,6 +472,13 @@ const updateEmployeeByAdmin = async (req, res, next) => {
       joining_date,
       profile_picture_url,
       employment_status,
+      bank_account_number,
+      bank_name,
+      bank_ifsc_code,
+      pan_number,
+      emergency_contact_name,
+      emergency_contact_phone,
+      marital_status,
       id,
     ]);
 
@@ -326,13 +522,6 @@ const updateEmployeeByAdmin = async (req, res, next) => {
       ipAddress: req.ip,
     });
 
-    // Notify employee of profile update
-    await sendNotification({
-      userId: updatedEmp.user_id,
-      title: 'Profile Updated',
-      message: 'Your employee profile information has been updated by HR/Admin.',
-    });
-
     res.json({
       success: true,
       message: 'Employee profile updated successfully.',
@@ -349,6 +538,7 @@ const updateEmployeeByAdmin = async (req, res, next) => {
 module.exports = {
   listEmployees,
   getEmployeeById,
+  createEmployee,
   updateMyProfile,
   updateEmployeeByAdmin,
 };
