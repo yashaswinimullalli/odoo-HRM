@@ -3,7 +3,7 @@
  * Connects Next.js Frontend to Node.js/Express + PostgreSQL Backend
  */
 
-import { UserProfile, AttendanceRecord, LeaveRecord, PayrollRecord, Notification } from "./types";
+import { UserProfile, AttendanceRecord, LeaveRecord, PayrollRecord, Notification, Role } from "./types";
 
 let rawApiUrl = process.env.NEXT_PUBLIC_API_URL || "https://odoo-hrm.onrender.com/api";
 if (!rawApiUrl.endsWith("/api")) {
@@ -108,8 +108,8 @@ export function mapBackendAttendance(row: any): AttendanceRecord {
   return {
     id: String(row.id),
     userId: String(row.employee_id || row.user_id),
-    employeeId: row.employee_code || `EMP${row.employee_id}`,
-    employeeName: row.employee_name || "Employee",
+    employeeId: row.employee_code || (row.employee_id ? `EMP${String(row.employee_id).padStart(3, "0")}` : "EMP"),
+    employeeName: row.employee_name || (row.first_name ? `${row.first_name} ${row.last_name || ""}`.trim() : (row.email ? row.email.split("@")[0] : "Employee")),
     date: dateStr,
     checkInTime: row.check_in ? (typeof row.check_in === "string" ? row.check_in.substring(11, 16) : new Date(row.check_in).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })) : null,
     checkOutTime: row.check_out ? (typeof row.check_out === "string" ? row.check_out.substring(11, 16) : new Date(row.check_out).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })) : null,
@@ -329,7 +329,7 @@ export const api = {
   },
 
   // Employees
-  getEmployees: async () => {
+  getEmployees: async (): Promise<UserProfile[]> => {
     const res = await request<{ success: boolean; employees?: any[]; data?: any[] }>("/employees");
     const list = res.employees || res.data || [];
     return list.map((e: any) => ({
@@ -337,13 +337,13 @@ export const api = {
       fullName: `${e.first_name} ${e.last_name || ""}`.trim(),
       employeeId: e.employee_code,
       email: e.email,
-      role: (e.user_role || e.role)?.toLowerCase() === "admin" ? "admin" : "employee",
-      department: e.department_name || "General",
+      role: ((e.user_role || e.role)?.toLowerCase() === "admin" ? "admin" : "employee") as Role,
+      department: e.department_name || "Engineering",
       designation: e.designation_title || "Specialist",
       joiningDate: e.joining_date ? (typeof e.joining_date === "string" ? e.joining_date.split("T")[0] : new Date(e.joining_date).toISOString().split("T")[0]) : "",
       phone: e.phone_number || e.phone || "",
       address: e.current_address || e.address || "",
-      employmentType: e.employment_status || "Full-time",
+      employmentType: e.employment_status || "ACTIVE",
       emailVerified: true,
     }));
   },

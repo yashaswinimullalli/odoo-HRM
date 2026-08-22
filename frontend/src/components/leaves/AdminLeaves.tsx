@@ -15,8 +15,8 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
-import { getAllLeaves, updateLeaveStatus } from "@/lib/mockStore";
+import { Loader2, CheckCircle2, XCircle } from "lucide-react";
+import { api } from "@/lib/api";
 import { LeaveRecord } from "@/lib/types";
 
 export function AdminLeaves() {
@@ -24,23 +24,40 @@ export function AdminLeaves() {
   const [selectedLeave, setSelectedLeave] = useState<LeaveRecord | null>(null);
   const [adminComment, setAdminComment] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
+  const [tableLoading, setTableLoading] = useState(false);
   const [filter, setFilter] = useState<"All" | "Pending" | "Approved" | "Rejected">("All");
 
-  useEffect(() => {
-    setLeaves(getAllLeaves());
-  }, []);
+  const loadLeaves = async () => {
+    setTableLoading(true);
+    try {
+      const data = await api.getAllLeaves(filter === "All" ? undefined : filter);
+      setLeaves(data || []);
+    } catch (err: any) {
+      console.warn("[AdminLeaves] Error loading leaves:", err);
+      toast.error(err.message || "Failed to load leave requests.");
+    } finally {
+      setTableLoading(false);
+    }
+  };
 
-  const handleAction = (status: "Approved" | "Rejected") => {
+  useEffect(() => {
+    loadLeaves();
+  }, [filter]);
+
+  const handleAction = async (status: "APPROVED" | "REJECTED") => {
     if (!selectedLeave) return;
     setActionLoading(true);
-    setTimeout(() => {
-      updateLeaveStatus(selectedLeave.id, status, adminComment);
-      setLeaves(getAllLeaves());
-      toast.success(`Leave request ${status.toLowerCase()}.`);
+    try {
+      await api.reviewLeave(selectedLeave.id, status, adminComment.trim() || undefined);
+      toast.success(`Leave request ${status === "APPROVED" ? "approved" : "rejected"} successfully.`);
       setSelectedLeave(null);
       setAdminComment("");
+      loadLeaves();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to update leave status.");
+    } finally {
       setActionLoading(false);
-    }, 500);
+    }
   };
 
   const statusBadge = (status: string) => {
@@ -52,138 +69,147 @@ export function AdminLeaves() {
     return <Badge variant="outline" className={map[status] ?? "border-border text-muted-foreground"}>{status}</Badge>;
   };
 
-  const filtered = filter === "All" ? leaves : leaves.filter((l) => l.status === filter);
-
   return (
     <div className="space-y-6">
       {/* Filter Tabs */}
-      <div className="flex gap-2">
-        {(["All", "Pending", "Approved", "Rejected"] as const).map((f) => (
+      <div className="flex flex-wrap gap-2">
+        {(["All", "Pending", "Approved", "Rejected"] as const).map((tab) => (
           <Button
-            key={f}
+            key={tab}
             size="sm"
-            variant={filter === f ? "default" : "outline"}
-            className={
-              filter === f
+            variant={filter === tab ? "default" : "outline"}
+            onClick={() => setFilter(tab)}
+            className={`text-xs h-8 ${
+              filter === tab
                 ? "bg-purple-600 hover:bg-purple-700 text-white"
-                : "border-border text-muted-foreground hover:bg-accent hover:text-foreground"
-            }
-            onClick={() => setFilter(f)}
+                : "border-border text-foreground hover:bg-accent"
+            }`}
           >
-            {f}
+            {tab} {tab === "Pending" && leaves.filter((l) => l.status === "Pending").length > 0 && `(${leaves.filter((l) => l.status === "Pending").length})`}
           </Button>
         ))}
       </div>
 
-      <Card className="bg-card border-border transition-colors duration-200">
-        <CardHeader>
-          <CardTitle className="text-foreground">Leave Requests</CardTitle>
+      <Card className="bg-card border-border transition-colors duration-200 shadow-sm">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-foreground text-base">Leave Requests</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="rounded-md border border-border">
-            <Table>
-              <TableHeader className="bg-muted/50">
-                <TableRow className="border-border hover:bg-transparent">
-                  <TableHead className="text-muted-foreground">Employee</TableHead>
-                  <TableHead className="text-muted-foreground">Type</TableHead>
-                  <TableHead className="text-muted-foreground">Duration</TableHead>
-                  <TableHead className="text-muted-foreground">Status</TableHead>
-                  <TableHead className="text-right text-muted-foreground">Action</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filtered.map((leave) => (
-                  <TableRow key={leave.id} className="border-border hover:bg-accent/40">
-                    <TableCell>
-                      <div className="font-medium text-foreground">{leave.employeeName}</div>
-                      <div className="text-xs text-muted-foreground">{leave.employeeId}</div>
-                    </TableCell>
-                    <TableCell className="text-foreground/90">{leave.leaveType}</TableCell>
-                    <TableCell className="text-foreground/90 text-sm whitespace-nowrap">
-                      {leave.startDate} <span className="text-muted-foreground">→</span> {leave.endDate}
-                    </TableCell>
-                    <TableCell>{statusBadge(leave.status)}</TableCell>
-                    <TableCell className="text-right">
-                      {leave.status === "Pending" ? (
-                        <Button
-                          size="sm"
-                          className="bg-purple-600 hover:bg-purple-700 text-white"
-                          onClick={() => setSelectedLeave(leave)}
-                        >
-                          Review
-                        </Button>
-                      ) : (
-                        <span className="text-sm text-muted-foreground">Done</span>
-                      )}
-                    </TableCell>
+          {tableLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-6 w-6 animate-spin text-purple-600" />
+            </div>
+          ) : (
+            <div className="rounded-md border border-border overflow-hidden">
+              <Table>
+                <TableHeader className="bg-muted/50">
+                  <TableRow className="border-border hover:bg-transparent">
+                    <TableHead className="text-muted-foreground text-xs">Employee</TableHead>
+                    <TableHead className="text-muted-foreground text-xs">Type</TableHead>
+                    <TableHead className="text-muted-foreground text-xs">Duration</TableHead>
+                    <TableHead className="text-muted-foreground text-xs">Reason</TableHead>
+                    <TableHead className="text-muted-foreground text-xs">Status</TableHead>
+                    <TableHead className="text-right text-muted-foreground text-xs">Action</TableHead>
                   </TableRow>
-                ))}
-                {filtered.length === 0 && (
-                  <TableRow className="border-border">
-                    <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
-                      No {filter.toLowerCase()} requests found.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
+                </TableHeader>
+                <TableBody>
+                  {leaves.map((leave) => (
+                    <TableRow key={leave.id} className="border-border hover:bg-accent/40 text-xs">
+                      <TableCell>
+                        <div className="font-semibold text-foreground">{leave.employeeName}</div>
+                        <div className="text-[11px] text-muted-foreground font-mono">{leave.employeeId}</div>
+                      </TableCell>
+                      <TableCell className="text-foreground">{leave.leaveType}</TableCell>
+                      <TableCell className="text-foreground whitespace-nowrap">
+                        {leave.startDate} <span className="text-muted-foreground">→</span> {leave.endDate}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground max-w-[200px]">
+                        <p className="truncate text-foreground/90">{leave.remarks}</p>
+                        {leave.adminComment && (
+                          <p className="text-[11px] text-purple-600 dark:text-purple-400 mt-0.5">
+                            Note: {leave.adminComment}
+                          </p>
+                        )}
+                      </TableCell>
+                      <TableCell>{statusBadge(leave.status)}</TableCell>
+                      <TableCell className="text-right">
+                        {leave.status === "Pending" ? (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="border-purple-600/40 text-purple-600 dark:text-purple-400 hover:bg-purple-600/10 text-xs h-7"
+                            onClick={() => {
+                              setSelectedLeave(leave);
+                              setAdminComment("");
+                            }}
+                          >
+                            Review
+                          </Button>
+                        ) : (
+                          <span className="text-muted-foreground text-xs">Reviewed</span>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {leaves.length === 0 && (
+                    <TableRow className="border-border">
+                      <TableCell colSpan={6} className="text-center text-muted-foreground py-8 text-xs">
+                        No leave requests found for this filter.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </CardContent>
       </Card>
 
       {/* Review Dialog */}
-      <Dialog open={!!selectedLeave} onOpenChange={(o) => !o && setSelectedLeave(null)}>
-        <DialogContent className="bg-card border-border text-foreground">
+      <Dialog open={!!selectedLeave} onOpenChange={(open) => !open && setSelectedLeave(null)}>
+        <DialogContent className="bg-card border-border text-foreground max-w-md">
           <DialogHeader>
-            <DialogTitle>Review Leave Request</DialogTitle>
-            <DialogDescription className="text-muted-foreground">
-              {selectedLeave?.employeeName} · {selectedLeave?.leaveType}
+            <DialogTitle className="text-foreground">Review Leave Request</DialogTitle>
+            <DialogDescription className="text-muted-foreground text-xs">
+              {selectedLeave?.employeeName} ({selectedLeave?.employeeId}) · {selectedLeave?.leaveType}
             </DialogDescription>
           </DialogHeader>
-          {selectedLeave && (
-            <div className="space-y-4 py-2">
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <p className="text-muted-foreground text-xs mb-1">Duration</p>
-                  <p className="font-medium text-foreground">{selectedLeave.startDate} to {selectedLeave.endDate}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground text-xs mb-1">Leave Type</p>
-                  <p className="font-medium text-foreground">{selectedLeave.leaveType}</p>
-                </div>
-                <div className="col-span-2">
-                  <p className="text-muted-foreground text-xs mb-1">Employee Reason</p>
-                  <p className="p-3 bg-muted rounded-md border border-border text-foreground text-sm">
-                    {selectedLeave.remarks}
-                  </p>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">Comment (Optional)</label>
-                <Textarea
-                  placeholder="Add a note for the employee..."
-                  value={adminComment}
-                  onChange={(e) => setAdminComment(e.target.value)}
-                  className="bg-background border-border text-foreground focus-visible:ring-purple-600"
-                />
-              </div>
+          <div className="space-y-4 text-xs">
+            <div className="bg-muted/50 p-3 rounded-lg border border-border space-y-1">
+              <p className="font-medium text-foreground">
+                Dates: {selectedLeave?.startDate} to {selectedLeave?.endDate}
+              </p>
+              <p className="text-muted-foreground">Reason: {selectedLeave?.remarks}</p>
             </div>
-          )}
-          <DialogFooter className="gap-2">
+            <div className="space-y-1.5">
+              <label className="font-medium text-foreground">Reviewer Note / Comment</label>
+              <Textarea
+                placeholder="Optional feedback or reason for decision..."
+                className="bg-background border-border text-foreground text-xs min-h-[80px]"
+                value={adminComment}
+                onChange={(e) => setAdminComment(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter className="flex gap-2 sm:justify-end">
             <Button
               variant="outline"
-              className="border-red-500/50 text-red-600 dark:text-red-400 hover:bg-red-500/10"
-              onClick={() => handleAction("Rejected")}
+              size="sm"
               disabled={actionLoading}
+              onClick={() => handleAction("REJECTED")}
+              className="border-red-500/50 text-red-600 dark:text-red-400 hover:bg-red-500/10 text-xs"
             >
-              {actionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Reject"}
+              <XCircle className="h-3.5 w-3.5 mr-1" />
+              Reject
             </Button>
             <Button
-              className="bg-green-600 hover:bg-green-700 text-white"
-              onClick={() => handleAction("Approved")}
+              size="sm"
               disabled={actionLoading}
+              onClick={() => handleAction("APPROVED")}
+              className="bg-green-600 hover:bg-green-700 text-white text-xs"
             >
-              {actionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Approve"}
+              {actionLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <CheckCircle2 className="h-3.5 w-3.5 mr-1" />}
+              Approve Leave
             </Button>
           </DialogFooter>
         </DialogContent>
