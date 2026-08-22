@@ -12,8 +12,8 @@ export default function PayrollPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-white">Payroll</h1>
-        <p className="text-zinc-400">
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">Payroll</h1>
+        <p className="text-muted-foreground">
           {profile.role === "admin" 
             ? "Manage employee salary structures and payroll records." 
             : "View your salary details and download salary slips."}

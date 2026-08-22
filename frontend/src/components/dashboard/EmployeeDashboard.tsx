@@ -98,38 +98,37 @@ export function EmployeeDashboard() {
     if (!todayRecord) return;
     setLoading(true);
     try {
-      const updated = await api.checkOut();
-      setTodayRecord(updated);
-      toast.success(`Checked out at ${updated.checkOutTime} · ${updated.totalWorkingHours} hrs worked`);
+      const record = await api.checkOut();
+      setTodayRecord(record);
+      toast.success(`Checked out at ${record.checkOutTime}!`);
     } catch (err: any) {
-      // Mock fallback
-      const updated = mockCheckOut(todayRecord.id);
-      setTodayRecord(updated);
-      toast.success(`Checked out at ${updated.checkOutTime} · ${updated.totalWorkingHours} hrs worked`);
+      const record = mockCheckOut(todayRecord.id);
+      setTodayRecord(record);
+      toast.success(`Checked out at ${record?.checkOutTime}`);
     } finally {
       setLoading(false);
     }
   };
 
-  const today = format(new Date(), "EEEE, MMMM do yyyy");
+  const today = format(new Date(), "EEEE, MMMM d, yyyy");
 
   const quickLinks = [
-    { label: "My Profile", href: "/dashboard/profile", icon: User, color: "text-blue-400" },
-    { label: "Attendance", href: "/dashboard/attendance", icon: Clock, color: "text-green-400" },
-    { label: "Apply Leave", href: "/dashboard/leaves", icon: Calendar, color: "text-orange-400" },
-    { label: "Payroll", href: "/dashboard/payroll", icon: FileText, color: "text-purple-400" },
+    { label: "My Profile", href: "/dashboard/profile", icon: User, color: "text-blue-500" },
+    { label: "Attendance", href: "/dashboard/attendance", icon: Clock, color: "text-green-500" },
+    { label: "Apply Leave", href: "/dashboard/leaves", icon: Calendar, color: "text-amber-500" },
+    { label: "Payroll", href: "/dashboard/payroll", icon: FileText, color: "text-purple-500" },
   ];
 
   return (
     <div className="space-y-6">
       {/* Welcome + Date */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 bg-zinc-950 rounded-xl border border-zinc-800">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 bg-card rounded-xl border border-border transition-colors duration-200">
         <div>
-          <h2 className="text-xl font-bold text-white">
+          <h2 className="text-xl font-bold text-foreground">
             Good {new Date().getHours() < 12 ? "Morning" : new Date().getHours() < 17 ? "Afternoon" : "Evening"},{" "}
             {profile?.fullName?.split(" ")[0]} 👋
           </h2>
-          <p className="text-sm text-zinc-400 mt-1">{today}</p>
+          <p className="text-sm text-muted-foreground mt-1">{today}</p>
         </div>
         <div className="flex gap-3">
           <Button
@@ -144,7 +143,7 @@ export function EmployeeDashboard() {
             onClick={handleCheckOut}
             disabled={loading || !todayRecord || !!todayRecord.checkOutTime}
             variant="outline"
-            className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:text-white gap-2"
+            className="border-border text-foreground hover:bg-accent gap-2"
           >
             <LogOut className="h-4 w-4" />
             {todayRecord?.checkOutTime ? "Checked Out" : "Check Out"}
@@ -154,69 +153,69 @@ export function EmployeeDashboard() {
 
       {/* Stats Cards */}
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
-        <Card className="bg-zinc-900 border-zinc-800">
+        <Card className="bg-card border-border transition-colors duration-200">
           <CardContent className="p-4">
-            <p className="text-xs text-zinc-400 mb-2">Today's Status</p>
+            <p className="text-xs text-muted-foreground mb-2">Today&apos;s Status</p>
             {todayRecord ? (
               <Badge
                 variant="outline"
                 className={
                   todayRecord.status === "Present"
-                    ? "border-green-500 text-green-400"
-                    : "border-orange-500 text-orange-400"
+                    ? "border-green-500 text-green-600 dark:text-green-400 bg-green-500/10"
+                    : "border-amber-500 text-amber-600 dark:text-amber-400 bg-amber-500/10"
                 }
               >
                 {todayRecord.status}
               </Badge>
             ) : (
-              <Badge variant="outline" className="border-zinc-600 text-zinc-400">Not Checked In</Badge>
+              <Badge variant="outline" className="border-border text-muted-foreground">Not Checked In</Badge>
             )}
           </CardContent>
         </Card>
-        <Card className="bg-zinc-900 border-zinc-800">
+        <Card className="bg-card border-border transition-colors duration-200">
           <CardContent className="p-4">
-            <p className="text-xs text-zinc-400 mb-1">Check In</p>
-            <p className="text-xl font-bold text-white">{todayRecord?.checkInTime ?? "--:--"}</p>
+            <p className="text-xs text-muted-foreground mb-1">Check In</p>
+            <p className="text-xl font-bold text-foreground">{todayRecord?.checkInTime ?? "--:--"}</p>
           </CardContent>
         </Card>
-        <Card className="bg-zinc-900 border-zinc-800">
+        <Card className="bg-card border-border transition-colors duration-200">
           <CardContent className="p-4">
-            <p className="text-xs text-zinc-400 mb-1">Check Out</p>
-            <p className="text-xl font-bold text-white">{todayRecord?.checkOutTime ?? "--:--"}</p>
+            <p className="text-xs text-muted-foreground mb-1">Check Out</p>
+            <p className="text-xl font-bold text-foreground">{todayRecord?.checkOutTime ?? "--:--"}</p>
           </CardContent>
         </Card>
-        <Card className="bg-zinc-900 border-zinc-800">
+        <Card className="bg-card border-border transition-colors duration-200">
           <CardContent className="p-4">
-            <p className="text-xs text-zinc-400 mb-1">Pending Leaves</p>
-            <p className="text-xl font-bold text-white">{pendingLeaves}</p>
+            <p className="text-xs text-muted-foreground mb-1">Pending Leaves</p>
+            <p className="text-xl font-bold text-foreground">{pendingLeaves}</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Salary Card + Quick Links */}
       <div className="grid gap-4 md:grid-cols-2">
-        <Card className="bg-zinc-900 border-zinc-800">
+        <Card className="bg-card border-border transition-colors duration-200">
           <CardHeader className="pb-2">
-            <CardTitle className="text-base text-white">Current Month Salary</CardTitle>
+            <CardTitle className="text-base text-foreground">Current Month Salary</CardTitle>
           </CardHeader>
           <CardContent>
             {latestSalary ? (
               <div>
-                <p className="text-3xl font-bold text-white">₹{latestSalary.netSalary.toLocaleString()}</p>
-                <p className="text-xs text-zinc-500 mt-1">
+                <p className="text-3xl font-bold text-foreground">₹{latestSalary.netSalary.toLocaleString()}</p>
+                <p className="text-xs text-muted-foreground mt-1">
                   Basic: ₹{latestSalary.basicSalary.toLocaleString()} + Allowances: ₹{latestSalary.allowances.toLocaleString()} - Deductions: ₹{latestSalary.deductions.toLocaleString()}
                 </p>
               </div>
             ) : (
-              <p className="text-zinc-500 text-sm">No payroll data available.</p>
+              <p className="text-muted-foreground text-sm">No payroll data available.</p>
             )}
           </CardContent>
         </Card>
 
         {/* Quick Access */}
-        <Card className="bg-zinc-900 border-zinc-800">
+        <Card className="bg-card border-border transition-colors duration-200">
           <CardHeader className="pb-2">
-            <CardTitle className="text-base text-white">Quick Access</CardTitle>
+            <CardTitle className="text-base text-foreground">Quick Access</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 gap-3">
@@ -226,10 +225,10 @@ export function EmployeeDashboard() {
                   <Link
                     key={link.href}
                     href={link.href}
-                    className="flex items-center gap-2 p-3 rounded-lg bg-zinc-950 border border-zinc-800 hover:border-purple-600/40 transition-colors"
+                    className="flex items-center gap-2 p-3 rounded-lg bg-background border border-border hover:border-purple-600/40 transition-colors"
                   >
                     <Icon className={`h-4 w-4 ${link.color}`} />
-                    <span className="text-sm text-zinc-300">{link.label}</span>
+                    <span className="text-sm text-foreground">{link.label}</span>
                   </Link>
                 );
               })}

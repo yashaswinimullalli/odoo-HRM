@@ -45,11 +45,11 @@ export function AdminLeaves() {
 
   const statusBadge = (status: string) => {
     const map: Record<string, string> = {
-      Approved: "border-green-500 text-green-400",
-      Rejected: "border-red-500 text-red-400",
-      Pending: "border-orange-500 text-orange-400",
+      Approved: "border-green-500 text-green-600 dark:text-green-400 bg-green-500/10",
+      Rejected: "border-red-500 text-red-600 dark:text-red-400 bg-red-500/10",
+      Pending: "border-amber-500 text-amber-600 dark:text-amber-400 bg-amber-500/10",
     };
-    return <Badge variant="outline" className={map[status] ?? "border-zinc-500"}>{status}</Badge>;
+    return <Badge variant="outline" className={map[status] ?? "border-border text-muted-foreground"}>{status}</Badge>;
   };
 
   const filtered = filter === "All" ? leaves : leaves.filter((l) => l.status === filter);
@@ -66,7 +66,7 @@ export function AdminLeaves() {
             className={
               filter === f
                 ? "bg-purple-600 hover:bg-purple-700 text-white"
-                : "border-zinc-700 text-zinc-400 hover:bg-zinc-800 hover:text-white"
+                : "border-border text-muted-foreground hover:bg-accent hover:text-foreground"
             }
             onClick={() => setFilter(f)}
           >
@@ -75,32 +75,32 @@ export function AdminLeaves() {
         ))}
       </div>
 
-      <Card className="bg-zinc-900 border-zinc-800">
+      <Card className="bg-card border-border transition-colors duration-200">
         <CardHeader>
-          <CardTitle className="text-white">Leave Requests</CardTitle>
+          <CardTitle className="text-foreground">Leave Requests</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="rounded-md border border-zinc-800">
+          <div className="rounded-md border border-border">
             <Table>
-              <TableHeader className="bg-zinc-950/50">
-                <TableRow className="border-zinc-800 hover:bg-transparent">
-                  <TableHead className="text-zinc-400">Employee</TableHead>
-                  <TableHead className="text-zinc-400">Type</TableHead>
-                  <TableHead className="text-zinc-400">Duration</TableHead>
-                  <TableHead className="text-zinc-400">Status</TableHead>
-                  <TableHead className="text-right text-zinc-400">Action</TableHead>
+              <TableHeader className="bg-muted/50">
+                <TableRow className="border-border hover:bg-transparent">
+                  <TableHead className="text-muted-foreground">Employee</TableHead>
+                  <TableHead className="text-muted-foreground">Type</TableHead>
+                  <TableHead className="text-muted-foreground">Duration</TableHead>
+                  <TableHead className="text-muted-foreground">Status</TableHead>
+                  <TableHead className="text-right text-muted-foreground">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filtered.map((leave) => (
-                  <TableRow key={leave.id} className="border-zinc-800 hover:bg-zinc-800/50">
+                  <TableRow key={leave.id} className="border-border hover:bg-accent/40">
                     <TableCell>
-                      <div className="font-medium text-white">{leave.employeeName}</div>
-                      <div className="text-xs text-zinc-500">{leave.employeeId}</div>
+                      <div className="font-medium text-foreground">{leave.employeeName}</div>
+                      <div className="text-xs text-muted-foreground">{leave.employeeId}</div>
                     </TableCell>
-                    <TableCell className="text-zinc-300">{leave.leaveType}</TableCell>
-                    <TableCell className="text-zinc-300 text-sm whitespace-nowrap">
-                      {leave.startDate} <span className="text-zinc-500">→</span> {leave.endDate}
+                    <TableCell className="text-foreground/90">{leave.leaveType}</TableCell>
+                    <TableCell className="text-foreground/90 text-sm whitespace-nowrap">
+                      {leave.startDate} <span className="text-muted-foreground">→</span> {leave.endDate}
                     </TableCell>
                     <TableCell>{statusBadge(leave.status)}</TableCell>
                     <TableCell className="text-right">
@@ -113,14 +113,14 @@ export function AdminLeaves() {
                           Review
                         </Button>
                       ) : (
-                        <span className="text-sm text-zinc-600">Done</span>
+                        <span className="text-sm text-muted-foreground">Done</span>
                       )}
                     </TableCell>
                   </TableRow>
                 ))}
                 {filtered.length === 0 && (
-                  <TableRow className="border-zinc-800">
-                    <TableCell colSpan={5} className="text-center text-zinc-500 py-8">
+                  <TableRow className="border-border">
+                    <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
                       No {filter.toLowerCase()} requests found.
                     </TableCell>
                   </TableRow>
@@ -133,10 +133,10 @@ export function AdminLeaves() {
 
       {/* Review Dialog */}
       <Dialog open={!!selectedLeave} onOpenChange={(o) => !o && setSelectedLeave(null)}>
-        <DialogContent className="bg-zinc-900 border-zinc-800 text-zinc-100">
+        <DialogContent className="bg-card border-border text-foreground">
           <DialogHeader>
             <DialogTitle>Review Leave Request</DialogTitle>
-            <DialogDescription className="text-zinc-400">
+            <DialogDescription className="text-muted-foreground">
               {selectedLeave?.employeeName} · {selectedLeave?.leaveType}
             </DialogDescription>
           </DialogHeader>
@@ -144,27 +144,27 @@ export function AdminLeaves() {
             <div className="space-y-4 py-2">
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <p className="text-zinc-500 text-xs mb-1">Duration</p>
-                  <p className="font-medium">{selectedLeave.startDate} to {selectedLeave.endDate}</p>
+                  <p className="text-muted-foreground text-xs mb-1">Duration</p>
+                  <p className="font-medium text-foreground">{selectedLeave.startDate} to {selectedLeave.endDate}</p>
                 </div>
                 <div>
-                  <p className="text-zinc-500 text-xs mb-1">Leave Type</p>
-                  <p className="font-medium">{selectedLeave.leaveType}</p>
+                  <p className="text-muted-foreground text-xs mb-1">Leave Type</p>
+                  <p className="font-medium text-foreground">{selectedLeave.leaveType}</p>
                 </div>
                 <div className="col-span-2">
-                  <p className="text-zinc-500 text-xs mb-1">Employee Reason</p>
-                  <p className="p-3 bg-zinc-950 rounded-md border border-zinc-800 text-zinc-300 text-sm">
+                  <p className="text-muted-foreground text-xs mb-1">Employee Reason</p>
+                  <p className="p-3 bg-muted rounded-md border border-border text-foreground text-sm">
                     {selectedLeave.remarks}
                   </p>
                 </div>
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium text-zinc-300">Comment (Optional)</label>
+                <label className="text-sm font-medium text-foreground">Comment (Optional)</label>
                 <Textarea
                   placeholder="Add a note for the employee..."
                   value={adminComment}
                   onChange={(e) => setAdminComment(e.target.value)}
-                  className="bg-zinc-950 border-zinc-800 focus-visible:ring-purple-600"
+                  className="bg-background border-border text-foreground focus-visible:ring-purple-600"
                 />
               </div>
             </div>
@@ -172,7 +172,7 @@ export function AdminLeaves() {
           <DialogFooter className="gap-2">
             <Button
               variant="outline"
-              className="border-red-500/50 text-red-400 hover:bg-red-500/10"
+              className="border-red-500/50 text-red-600 dark:text-red-400 hover:bg-red-500/10"
               onClick={() => handleAction("Rejected")}
               disabled={actionLoading}
             >

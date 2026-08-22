@@ -12,8 +12,8 @@ export default function LeavesPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-white">Leave & Time Off</h1>
-        <p className="text-zinc-400">
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">Leave & Time Off</h1>
+        <p className="text-muted-foreground">
           {profile.role === "admin" 
             ? "Manage and approve employee leave requests." 
             : "Apply for leaves and track your time off."}

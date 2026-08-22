@@ -12,8 +12,8 @@ export default function AttendancePage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-white">Attendance</h1>
-        <p className="text-zinc-400">
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">Attendance</h1>
+        <p className="text-muted-foreground">
           {profile.role === "admin" 
             ? "Monitor and manage employee attendance records." 
             : "Track your daily working hours and attendance history."}

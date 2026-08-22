@@ -69,22 +69,22 @@ export function AdminDashboard() {
   }, []);
 
   const statCards = [
-    { title: "Total Employees", value: stats.total, icon: Users, color: "text-blue-400", bg: "bg-blue-400/10" },
-    { title: "Present Today", value: stats.present, icon: UserCheck, color: "text-green-400", bg: "bg-green-400/10" },
-    { title: "Absent Today", value: stats.absent, icon: UserX, color: "text-red-400", bg: "bg-red-400/10" },
-    { title: "Half Day", value: stats.halfDay, icon: Clock, color: "text-orange-400", bg: "bg-orange-400/10" },
-    { title: "On Leave", value: stats.onLeave, icon: CalendarOff, color: "text-purple-400", bg: "bg-purple-400/10" },
-    { title: "Pending Approvals", value: stats.pendingLeaves, icon: AlertTriangle, color: "text-yellow-400", bg: "bg-yellow-400/10" },
+    { title: "Total Employees", value: stats.total, icon: Users, color: "text-blue-500", bg: "bg-blue-500/10" },
+    { title: "Present Today", value: stats.present, icon: UserCheck, color: "text-green-500", bg: "bg-green-500/10" },
+    { title: "Absent Today", value: stats.absent, icon: UserX, color: "text-red-500", bg: "bg-red-500/10" },
+    { title: "Half Day", value: stats.halfDay, icon: Clock, color: "text-orange-500", bg: "bg-orange-500/10" },
+    { title: "On Leave", value: stats.onLeave, icon: CalendarOff, color: "text-purple-500", bg: "bg-purple-500/10" },
+    { title: "Pending Approvals", value: stats.pendingLeaves, icon: AlertTriangle, color: "text-amber-500", bg: "bg-amber-500/10" },
   ];
 
   const statusBadge = (status: string) => {
     const map: Record<string, string> = {
-      Present: "border-green-500 text-green-400",
-      Absent: "border-red-500 text-red-400",
-      "Half-day": "border-orange-500 text-orange-400",
-      Leave: "border-purple-500 text-purple-400",
+      Present: "border-green-500 text-green-600 dark:text-green-400 bg-green-500/10",
+      Absent: "border-red-500 text-red-600 dark:text-red-400 bg-red-500/10",
+      "Half-day": "border-orange-500 text-orange-600 dark:text-orange-400 bg-orange-500/10",
+      Leave: "border-purple-500 text-purple-600 dark:text-purple-400 bg-purple-500/10",
     };
-    return <Badge variant="outline" className={map[status] ?? "border-zinc-500 text-zinc-400"}>{status}</Badge>;
+    return <Badge variant="outline" className={map[status] ?? "border-border text-muted-foreground"}>{status}</Badge>;
   };
 
   return (
@@ -94,13 +94,13 @@ export function AdminDashboard() {
         {statCards.map((s, i) => {
           const Icon = s.icon;
           return (
-            <Card key={i} className="bg-zinc-900 border-zinc-800">
+            <Card key={i} className="bg-card border-border transition-colors duration-200">
               <CardContent className="p-4">
                 <div className={`inline-flex p-2 rounded-lg ${s.bg} mb-3`}>
                   <Icon className={`h-4 w-4 ${s.color}`} />
                 </div>
-                <div className="text-2xl font-bold text-white">{s.value}</div>
-                <p className="text-xs text-zinc-400 mt-1">{s.title}</p>
+                <div className="text-2xl font-bold text-foreground">{s.value}</div>
+                <p className="text-xs text-muted-foreground mt-1">{s.title}</p>
               </CardContent>
             </Card>
           );
@@ -109,26 +109,26 @@ export function AdminDashboard() {
 
       <div className="grid gap-6 md:grid-cols-2">
         {/* Today's Attendance */}
-        <Card className="bg-zinc-900 border-zinc-800">
+        <Card className="bg-card border-border transition-colors duration-200">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-white text-base">Today's Attendance Overview</CardTitle>
+            <CardTitle className="text-foreground text-base">Today&apos;s Attendance Overview</CardTitle>
             <Link href="/dashboard/attendance">
-              <Button variant="ghost" size="sm" className="text-purple-400 hover:text-purple-300 text-xs">View All</Button>
+              <Button variant="ghost" size="sm" className="text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 text-xs">View All</Button>
             </Link>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
               {recentAttendance.length === 0 && (
                 <div className="py-4 text-center">
-                  <p className="text-sm text-zinc-400">Total present today: <strong className="text-green-400">{stats.present}</strong></p>
-                  <p className="text-xs text-zinc-500 mt-1">Visit the Attendance tab for complete daily rosters.</p>
+                  <p className="text-sm text-muted-foreground">Total present today: <strong className="text-green-600 dark:text-green-400">{stats.present}</strong></p>
+                  <p className="text-xs text-muted-foreground mt-1">Visit the Attendance tab for complete daily rosters.</p>
                 </div>
               )}
               {recentAttendance.map((a) => (
-                <div key={a.id} className="flex items-center justify-between py-2 border-b border-zinc-800 last:border-0">
+                <div key={a.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
                   <div>
-                    <p className="text-sm font-medium text-white">{a.employeeName}</p>
-                    <p className="text-xs text-zinc-500">{a.checkInTime ? `In: ${a.checkInTime}` : "Not checked in"}</p>
+                    <p className="text-sm font-medium text-foreground">{a.employeeName}</p>
+                    <p className="text-xs text-muted-foreground">{a.checkInTime ? `In: ${a.checkInTime}` : "Not checked in"}</p>
                   </div>
                   {statusBadge(a.status)}
                 </div>
@@ -138,25 +138,25 @@ export function AdminDashboard() {
         </Card>
 
         {/* Pending Approvals */}
-        <Card className="bg-zinc-900 border-zinc-800">
+        <Card className="bg-card border-border transition-colors duration-200">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-white text-base">Pending Leave Requests</CardTitle>
+            <CardTitle className="text-foreground text-base">Pending Leave Requests</CardTitle>
             <Link href="/dashboard/leaves">
-              <Button variant="ghost" size="sm" className="text-purple-400 hover:text-purple-300 text-xs">Review All</Button>
+              <Button variant="ghost" size="sm" className="text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 text-xs">Review All</Button>
             </Link>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
               {pendingLeaves.length === 0 && (
-                <p className="text-sm text-zinc-500 py-4 text-center">No pending approvals. 🎉</p>
+                <p className="text-sm text-muted-foreground py-4 text-center">No pending approvals. 🎉</p>
               )}
               {pendingLeaves.map((l) => (
-                <div key={l.id} className="flex items-center justify-between py-2 border-b border-zinc-800 last:border-0">
+                <div key={l.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
                   <div>
-                    <p className="text-sm font-medium text-white">{l.employeeName}</p>
-                    <p className="text-xs text-zinc-500">{l.leaveType} · {l.startDate} to {l.endDate}</p>
+                    <p className="text-sm font-medium text-foreground">{l.employeeName}</p>
+                    <p className="text-xs text-muted-foreground">{l.leaveType} · {l.startDate} to {l.endDate}</p>
                   </div>
-                  <Badge variant="outline" className="border-orange-500 text-orange-400">Pending</Badge>
+                  <Badge variant="outline" className="border-amber-500 text-amber-600 dark:text-amber-400 bg-amber-500/10">Pending</Badge>
                 </div>
               ))}
             </div>

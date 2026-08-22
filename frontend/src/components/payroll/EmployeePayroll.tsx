@@ -31,43 +31,43 @@ export function EmployeePayroll() {
 
   return (
     <div className="space-y-6 max-w-4xl">
-      <Card className="bg-zinc-900 border-zinc-800">
+      <Card className="bg-card border-border transition-colors duration-200">
         <CardHeader>
-          <CardTitle className="text-white">My Salary Slips</CardTitle>
-          <CardDescription className="text-zinc-400">
+          <CardTitle className="text-foreground">My Salary Slips</CardTitle>
+          <CardDescription className="text-muted-foreground">
             View your monthly salary breakdown.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="rounded-md border border-zinc-800">
+          <div className="rounded-md border border-border">
             <Table>
-              <TableHeader className="bg-zinc-950/50">
-                <TableRow className="border-zinc-800 hover:bg-transparent">
-                  <TableHead className="text-zinc-400">Month</TableHead>
-                  <TableHead className="text-zinc-400">Basic Salary</TableHead>
-                  <TableHead className="text-zinc-400">Allowances</TableHead>
-                  <TableHead className="text-zinc-400">Deductions</TableHead>
-                  <TableHead className="text-zinc-400 font-semibold">Net Salary</TableHead>
-                  <TableHead className="text-right text-zinc-400">Slip</TableHead>
+              <TableHeader className="bg-muted/50">
+                <TableRow className="border-border hover:bg-transparent">
+                  <TableHead className="text-muted-foreground">Month</TableHead>
+                  <TableHead className="text-muted-foreground">Basic Salary</TableHead>
+                  <TableHead className="text-muted-foreground">Allowances</TableHead>
+                  <TableHead className="text-muted-foreground">Deductions</TableHead>
+                  <TableHead className="text-muted-foreground font-semibold">Net Salary</TableHead>
+                  <TableHead className="text-right text-muted-foreground">Slip</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {payrolls.map((p) => (
                   <TableRow
                     key={p.id}
-                    className={`border-zinc-800 hover:bg-zinc-800/50 cursor-pointer ${selectedSlip?.id === p.id ? "bg-purple-600/5" : ""}`}
+                    className={`border-border hover:bg-accent/40 cursor-pointer ${selectedSlip?.id === p.id ? "bg-purple-600/10" : ""}`}
                     onClick={() => setSelectedSlip(p)}
                   >
-                    <TableCell className="font-medium text-white">{p.month}</TableCell>
-                    <TableCell className="text-zinc-300">${p.basicSalary.toLocaleString()}</TableCell>
-                    <TableCell className="text-green-400">+${p.allowances.toLocaleString()}</TableCell>
-                    <TableCell className="text-red-400">-${p.deductions.toLocaleString()}</TableCell>
-                    <TableCell className="font-bold text-white">${p.netSalary.toLocaleString()}</TableCell>
+                    <TableCell className="font-medium text-foreground">{p.month}</TableCell>
+                    <TableCell className="text-foreground">₹{p.basicSalary.toLocaleString()}</TableCell>
+                    <TableCell className="text-green-600 dark:text-green-400">+₹{p.allowances.toLocaleString()}</TableCell>
+                    <TableCell className="text-red-600 dark:text-red-400">-₹{p.deductions.toLocaleString()}</TableCell>
+                    <TableCell className="font-bold text-foreground">₹{p.netSalary.toLocaleString()}</TableCell>
                     <TableCell className="text-right">
                       <Button
                         size="sm"
                         variant="outline"
-                        className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:text-white"
+                        className="border-border text-foreground hover:bg-accent"
                         onClick={(e) => {
                           e.stopPropagation();
                           setSelectedSlip(p);
@@ -81,8 +81,8 @@ export function EmployeePayroll() {
                   </TableRow>
                 ))}
                 {payrolls.length === 0 && (
-                  <TableRow className="border-zinc-800">
-                    <TableCell colSpan={6} className="text-center text-zinc-500 py-8">
+                  <TableRow className="border-border">
+                    <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
                       No payroll records found.
                     </TableCell>
                   </TableRow>
@@ -136,20 +136,20 @@ export function EmployeePayroll() {
                 <tbody>
                   <tr className="border-b border-gray-100">
                     <td className="py-3 px-4 text-gray-700">Basic Salary</td>
-                    <td className="py-3 px-4 text-right text-gray-800">${selectedSlip.basicSalary.toLocaleString()}</td>
+                    <td className="py-3 px-4 text-right text-gray-800">₹{selectedSlip.basicSalary.toLocaleString()}</td>
                   </tr>
                   <tr className="border-b border-gray-100">
                     <td className="py-3 px-4 text-gray-700">Allowances</td>
-                    <td className="py-3 px-4 text-right text-green-600">+${selectedSlip.allowances.toLocaleString()}</td>
+                    <td className="py-3 px-4 text-right text-green-600">+₹{selectedSlip.allowances.toLocaleString()}</td>
                   </tr>
                   <tr className="border-b border-gray-100">
                     <td className="py-3 px-4 text-gray-700">Deductions</td>
-                    <td className="py-3 px-4 text-right text-red-600">-${selectedSlip.deductions.toLocaleString()}</td>
+                    <td className="py-3 px-4 text-right text-red-600">-₹{selectedSlip.deductions.toLocaleString()}</td>
                   </tr>
                   <tr className="bg-purple-50">
                     <td className="py-4 px-4 font-bold text-gray-900 text-lg">Net Salary</td>
                     <td className="py-4 px-4 text-right font-bold text-purple-700 text-lg">
-                      ${selectedSlip.netSalary.toLocaleString()}
+                      ₹{selectedSlip.netSalary.toLocaleString()}
                     </td>
                   </tr>
                 </tbody>

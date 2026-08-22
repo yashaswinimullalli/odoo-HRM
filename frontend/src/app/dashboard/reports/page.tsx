@@ -71,31 +71,26 @@ export default function ReportsPage() {
   if (!stats) return null;
 
   const summaryCards = [
-    { label: "Total Employees", value: stats.totalEmployees, color: "text-blue-400" },
-    { label: "Total Leave Requests", value: stats.totalLeaves, color: "text-purple-400" },
-    { label: "Pending", value: stats.pending, color: "text-orange-400" },
-    { label: "Approved", value: stats.approved, color: "text-green-400" },
-    { label: "Rejected", value: stats.rejected, color: "text-red-400" },
+    { label: "Total Employees", value: stats.totalEmployees, color: "text-blue-500" },
+    { label: "Total Leave Requests", value: stats.totalLeaves, color: "text-purple-500" },
+    { label: "Pending", value: stats.pending, color: "text-amber-500" },
+    { label: "Approved", value: stats.approved, color: "text-green-500" },
+    { label: "Rejected", value: stats.rejected, color: "text-red-500" },
   ];
-
-  const chartTooltipStyle = {
-    contentStyle: { backgroundColor: "#18181b", borderColor: "#27272a", color: "#fff" },
-    itemStyle: { color: "#fff" },
-  };
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-white">Reports & Analytics</h1>
-        <p className="text-zinc-400">System-wide metrics and visual analytics.</p>
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">Reports & Analytics</h1>
+        <p className="text-muted-foreground">System-wide metrics and visual analytics.</p>
       </div>
 
       {/* Summary cards */}
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-5">
         {summaryCards.map((c) => (
-          <Card key={c.label} className="bg-zinc-900 border-zinc-800">
+          <Card key={c.label} className="bg-card border-border transition-colors duration-200">
             <CardContent className="p-4">
-              <p className="text-xs text-zinc-400 mb-1">{c.label}</p>
+              <p className="text-xs text-muted-foreground mb-1">{c.label}</p>
               <p className={`text-2xl font-bold ${c.color}`}>{c.value}</p>
             </CardContent>
           </Card>
@@ -104,9 +99,9 @@ export default function ReportsPage() {
 
       <div className="grid gap-6 md:grid-cols-2">
         {/* Leave Status Pie */}
-        <Card className="bg-zinc-900 border-zinc-800">
+        <Card className="bg-card border-border transition-colors duration-200">
           <CardHeader>
-            <CardTitle className="text-white text-base">Leave Status Distribution</CardTitle>
+            <CardTitle className="text-foreground text-base">Leave Status Distribution</CardTitle>
           </CardHeader>
           <CardContent className="h-[280px]">
             <ResponsiveContainer width="100%" height="100%">
@@ -116,7 +111,7 @@ export default function ReportsPage() {
                     <Cell key={i} fill={e.color} />
                   ))}
                 </Pie>
-                <Tooltip {...chartTooltipStyle} />
+                <Tooltip />
                 <Legend />
               </PieChart>
             </ResponsiveContainer>
@@ -124,17 +119,17 @@ export default function ReportsPage() {
         </Card>
 
         {/* Leave by Type Bar */}
-        <Card className="bg-zinc-900 border-zinc-800">
+        <Card className="bg-card border-border transition-colors duration-200">
           <CardHeader>
-            <CardTitle className="text-white text-base">Leave Requests by Type</CardTitle>
+            <CardTitle className="text-foreground text-base">Leave Requests by Type</CardTitle>
           </CardHeader>
           <CardContent className="h-[280px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={stats.leaveByType} margin={{ top: 5, right: 10, bottom: 5, left: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
-                <XAxis dataKey="name" tick={{ fill: "#71717a", fontSize: 12 }} />
-                <YAxis tick={{ fill: "#71717a", fontSize: 12 }} allowDecimals={false} />
-                <Tooltip {...chartTooltipStyle} />
+                <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                <YAxis tick={{ fontSize: 12 }} allowDecimals={false} />
+                <Tooltip />
                 <Bar dataKey="value" fill="#9333ea" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -143,19 +138,18 @@ export default function ReportsPage() {
       </div>
 
       {/* Payroll by Dept */}
-      <Card className="bg-zinc-900 border-zinc-800">
+      <Card className="bg-card border-border transition-colors duration-200">
         <CardHeader>
-          <CardTitle className="text-white text-base">Total Payroll by Department</CardTitle>
+          <CardTitle className="text-foreground text-base">Total Payroll by Department</CardTitle>
         </CardHeader>
         <CardContent className="h-[280px]">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={stats.payrollByDept} margin={{ top: 5, right: 10, bottom: 5, left: 20 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
-              <XAxis dataKey="name" tick={{ fill: "#71717a", fontSize: 11 }} />
-              <YAxis tick={{ fill: "#71717a", fontSize: 11 }} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
+              <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+              <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+              <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}k`} />
               <Tooltip
-                {...chartTooltipStyle}
-                formatter={(v: any) => [`$${Number(v || 0).toLocaleString()}`, "Total Payroll"]}
+                formatter={(v: any) => [`₹${Number(v || 0).toLocaleString()}`, "Total Payroll"]}
               />
               <Bar dataKey="total" fill="#7c3aed" radius={[4, 4, 0, 0]} />
             </BarChart>

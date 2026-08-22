@@ -26,9 +26,9 @@ export function AdminPayroll() {
   const [actionLoading, setActionLoading] = useState(false);
   const [formData, setFormData] = useState({
     month: format(new Date(), "yyyy-MM"),
-    basicSalary: 5000,
-    allowances: 1000,
-    deductions: 500,
+    basicSalary: 50000,
+    allowances: 10000,
+    deductions: 5000,
   });
 
   useEffect(() => {
@@ -43,7 +43,7 @@ export function AdminPayroll() {
       createPayroll(selectedEmp.uid, selectedEmp.employeeId, formData);
       toast.success(`Salary slip generated for ${selectedEmp.fullName}`);
       setSelectedEmp(null);
-      setFormData({ month: format(new Date(), "yyyy-MM"), basicSalary: 5000, allowances: 1000, deductions: 500 });
+      setFormData({ month: format(new Date(), "yyyy-MM"), basicSalary: 50000, allowances: 10000, deductions: 5000 });
       setActionLoading(false);
     }, 500);
   };
@@ -52,30 +52,30 @@ export function AdminPayroll() {
 
   return (
     <div className="space-y-6">
-      <Card className="bg-zinc-900 border-zinc-800">
+      <Card className="bg-card border-border transition-colors duration-200">
         <CardHeader>
-          <CardTitle className="text-white">Employee Payroll</CardTitle>
+          <CardTitle className="text-foreground">Employee Payroll</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="rounded-md border border-zinc-800">
+          <div className="rounded-md border border-border">
             <Table>
-              <TableHeader className="bg-zinc-950/50">
-                <TableRow className="border-zinc-800 hover:bg-transparent">
-                  <TableHead className="text-zinc-400">Employee</TableHead>
-                  <TableHead className="text-zinc-400">Department</TableHead>
-                  <TableHead className="text-zinc-400">Designation</TableHead>
-                  <TableHead className="text-right text-zinc-400">Action</TableHead>
+              <TableHeader className="bg-muted/50">
+                <TableRow className="border-border hover:bg-transparent">
+                  <TableHead className="text-muted-foreground">Employee</TableHead>
+                  <TableHead className="text-muted-foreground">Department</TableHead>
+                  <TableHead className="text-muted-foreground">Designation</TableHead>
+                  <TableHead className="text-right text-muted-foreground">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {employees.map((emp) => (
-                  <TableRow key={emp.uid} className="border-zinc-800 hover:bg-zinc-800/50">
+                  <TableRow key={emp.uid} className="border-border hover:bg-accent/40">
                     <TableCell>
-                      <div className="font-medium text-white">{emp.fullName}</div>
-                      <div className="text-xs text-zinc-500">{emp.employeeId}</div>
+                      <div className="font-medium text-foreground">{emp.fullName}</div>
+                      <div className="text-xs text-muted-foreground">{emp.employeeId}</div>
                     </TableCell>
-                    <TableCell className="text-zinc-300">{emp.department ?? "--"}</TableCell>
-                    <TableCell className="text-zinc-300">{emp.designation ?? "--"}</TableCell>
+                    <TableCell className="text-foreground">{emp.department ?? "--"}</TableCell>
+                    <TableCell className="text-foreground">{emp.designation ?? "--"}</TableCell>
                     <TableCell className="text-right">
                       <Button
                         size="sm"
@@ -94,65 +94,65 @@ export function AdminPayroll() {
       </Card>
 
       <Dialog open={!!selectedEmp} onOpenChange={(o) => !o && setSelectedEmp(null)}>
-        <DialogContent className="bg-zinc-900 border-zinc-800 text-zinc-100">
+        <DialogContent className="bg-card border-border text-foreground">
           <DialogHeader>
             <DialogTitle>Generate Salary Slip</DialogTitle>
-            <DialogDescription className="text-zinc-400">
+            <DialogDescription className="text-muted-foreground">
               Create a payroll record for {selectedEmp?.fullName} ({selectedEmp?.employeeId})
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleGenerate} className="space-y-4 py-2">
             <div className="space-y-2">
-              <Label className="text-zinc-300">Month</Label>
+              <Label className="text-foreground">Month</Label>
               <Input
                 type="month"
                 required
                 value={formData.month}
                 onChange={(e) => setFormData((p) => ({ ...p, month: e.target.value }))}
-                className="bg-zinc-950 border-zinc-800"
+                className="bg-background border-border text-foreground"
               />
             </div>
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
-                <Label className="text-zinc-300">Basic Salary ($)</Label>
+                <Label className="text-foreground">Basic Salary (₹)</Label>
                 <Input
                   type="number"
                   min={0}
                   required
                   value={formData.basicSalary}
                   onChange={(e) => setFormData((p) => ({ ...p, basicSalary: Number(e.target.value) }))}
-                  className="bg-zinc-950 border-zinc-800"
+                  className="bg-background border-border text-foreground"
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-zinc-300">Allowances ($)</Label>
+                <Label className="text-foreground">Allowances (₹)</Label>
                 <Input
                   type="number"
                   min={0}
                   required
                   value={formData.allowances}
                   onChange={(e) => setFormData((p) => ({ ...p, allowances: Number(e.target.value) }))}
-                  className="bg-zinc-950 border-zinc-800"
+                  className="bg-background border-border text-foreground"
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-zinc-300">Deductions ($)</Label>
+                <Label className="text-foreground">Deductions (₹)</Label>
                 <Input
                   type="number"
                   min={0}
                   required
                   value={formData.deductions}
                   onChange={(e) => setFormData((p) => ({ ...p, deductions: Number(e.target.value) }))}
-                  className="bg-zinc-950 border-zinc-800"
+                  className="bg-background border-border text-foreground"
                 />
               </div>
             </div>
-            <div className="flex justify-between items-center p-4 bg-zinc-950 border border-zinc-800 rounded-lg">
-              <span className="text-zinc-300 font-medium">Net Salary</span>
-              <span className="text-xl font-bold text-white">${netSalary.toLocaleString()}</span>
+            <div className="flex justify-between items-center p-4 bg-muted border border-border rounded-lg">
+              <span className="text-foreground font-medium">Net Salary</span>
+              <span className="text-xl font-bold text-foreground">₹{netSalary.toLocaleString()}</span>
             </div>
             <DialogFooter className="gap-2 pt-2">
-              <Button type="button" variant="outline" className="border-zinc-700 text-zinc-300" onClick={() => setSelectedEmp(null)}>
+              <Button type="button" variant="outline" className="border-border text-foreground" onClick={() => setSelectedEmp(null)}>
                 Cancel
               </Button>
               <Button type="submit" disabled={actionLoading} className="bg-purple-600 hover:bg-purple-700 text-white">

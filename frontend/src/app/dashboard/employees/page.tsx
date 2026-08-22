@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Search, UserPlus, LayoutGrid, List, Key, Copy, CheckCircle2, Loader2, Phone, Mail, Building } from "lucide-react";
+import { Search, UserPlus, LayoutGrid, List, Copy, CheckCircle2, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { UserProfile } from "@/lib/types";
 
@@ -66,7 +66,7 @@ export default function EmployeesPage() {
   }, [profile]);
 
   if (profile?.role !== "admin") {
-    return <div className="text-red-500 p-6">Access Denied. Admin privileges required.</div>;
+    return <div className="text-destructive p-6">Access Denied. Admin privileges required.</div>;
   }
 
   const handleCreateEmployee = async (e: React.FormEvent) => {
@@ -110,43 +110,54 @@ export default function EmployeesPage() {
   const departments = ["ALL", ...Array.from(new Set(employees.map((e) => e.department).filter(Boolean)))];
 
   const filtered = employees.filter((emp) => {
-    const matchesSearch =
-      emp.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      emp.employeeId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (emp.department?.toLowerCase() ?? "").includes(searchTerm.toLowerCase());
-    const matchesDept = selectedDept === "ALL" || emp.department === selectedDept;
-    return matchesSearch && matchesDept;
+    const matchSearch =
+      (emp.fullName || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (emp.employeeId || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (emp.email || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (emp.department || "").toLowerCase().includes(searchTerm.toLowerCase());
+    const matchDept = selectedDept === "ALL" || emp.department === selectedDept;
+    return matchSearch && matchDept;
   });
 
   return (
     <div className="space-y-6">
-      {/* Header & Actions */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-zinc-950 p-5 rounded-xl border border-zinc-800">
+      {/* Header Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-white">Employee Directory</h1>
-          <p className="text-zinc-400 text-sm">{employees.length} active team members</p>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Employee Directory</h1>
+          <p className="text-muted-foreground text-sm">
+            Total active employees: <strong className="text-foreground">{employees.length}</strong>
+          </p>
         </div>
 
-        <div className="flex items-center gap-3 w-full sm:w-auto">
-          {/* View Mode Toggle */}
-          <div className="flex items-center bg-zinc-900 border border-zinc-800 rounded-lg p-1">
+        <div className="flex items-center gap-3">
+          {/* Grid / Table Toggle */}
+          <div className="flex items-center rounded-lg border border-border bg-card p-0.5">
             <button
               onClick={() => setViewMode("grid")}
-              className={`p-1.5 rounded-md transition-colors ${viewMode === "grid" ? "bg-purple-600 text-white" : "text-zinc-400 hover:text-white"}`}
-              title="Kanban Grid View"
+              className={`p-1.5 rounded-md transition-colors ${
+                viewMode === "grid"
+                  ? "bg-purple-600 text-white"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+              title="Grid View"
             >
               <LayoutGrid className="h-4 w-4" />
             </button>
             <button
               onClick={() => setViewMode("table")}
-              className={`p-1.5 rounded-md transition-colors ${viewMode === "table" ? "bg-purple-600 text-white" : "text-zinc-400 hover:text-white"}`}
-              title="List Table View"
+              className={`p-1.5 rounded-md transition-colors ${
+                viewMode === "table"
+                  ? "bg-purple-600 text-white"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+              title="Table View"
             >
               <List className="h-4 w-4" />
             </button>
           </div>
 
-          {/* Add Employee Dialog */}
+          {/* Add Employee Dialog Button */}
           <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
             <DialogTrigger
               render={
@@ -156,99 +167,99 @@ export default function EmployeesPage() {
                 </Button>
               }
             />
-            <DialogContent className="bg-zinc-900 border-zinc-800 text-zinc-100 max-w-lg">
+            <DialogContent className="bg-card border-border text-foreground max-w-lg">
               <DialogHeader>
-                <DialogTitle className="text-lg font-bold text-white">Add New Employee</DialogTitle>
-                <DialogDescription className="text-zinc-400 text-xs">
-                  System will automatically generate their <strong>Login ID</strong> (e.g. <code>OIJODO20260001</code>) and temporary password.
+                <DialogTitle className="text-lg font-bold text-foreground">Add New Employee</DialogTitle>
+                <DialogDescription className="text-muted-foreground text-xs">
+                  System will automatically generate their <strong>Login ID</strong> and temporary password.
                 </DialogDescription>
               </DialogHeader>
 
               <form onSubmit={handleCreateEmployee} className="space-y-3.5 py-2">
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
-                    <Label className="text-xs text-zinc-300">First Name *</Label>
+                    <Label className="text-xs text-foreground">First Name *</Label>
                     <Input
                       required
                       placeholder="John"
                       value={formData.firstName}
                       onChange={(e) => setFormData((p) => ({ ...p, firstName: e.target.value }))}
-                      className="bg-zinc-950 border-zinc-800 text-sm h-9"
+                      className="bg-background border-border text-foreground text-sm h-9"
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-xs text-zinc-300">Last Name</Label>
+                    <Label className="text-xs text-foreground">Last Name</Label>
                     <Input
                       placeholder="Doe"
                       value={formData.lastName}
                       onChange={(e) => setFormData((p) => ({ ...p, lastName: e.target.value }))}
-                      className="bg-zinc-950 border-zinc-800 text-sm h-9"
+                      className="bg-background border-border text-foreground text-sm h-9"
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
-                    <Label className="text-xs text-zinc-300">Work Email *</Label>
+                    <Label className="text-xs text-foreground">Work Email *</Label>
                     <Input
                       type="email"
                       required
                       placeholder="john.doe@company.com"
                       value={formData.email}
                       onChange={(e) => setFormData((p) => ({ ...p, email: e.target.value }))}
-                      className="bg-zinc-950 border-zinc-800 text-sm h-9"
+                      className="bg-background border-border text-foreground text-sm h-9"
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-xs text-zinc-300">Phone</Label>
+                    <Label className="text-xs text-foreground">Phone</Label>
                     <Input
                       placeholder="+91 98765 43210"
                       value={formData.phone}
                       onChange={(e) => setFormData((p) => ({ ...p, phone: e.target.value }))}
-                      className="bg-zinc-950 border-zinc-800 text-sm h-9"
+                      className="bg-background border-border text-foreground text-sm h-9"
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
-                    <Label className="text-xs text-zinc-300">Department</Label>
+                    <Label className="text-xs text-foreground">Department</Label>
                     <Input
                       placeholder="Engineering"
                       value={formData.department}
                       onChange={(e) => setFormData((p) => ({ ...p, department: e.target.value }))}
-                      className="bg-zinc-950 border-zinc-800 text-sm h-9"
+                      className="bg-background border-border text-foreground text-sm h-9"
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-xs text-zinc-300">Designation</Label>
+                    <Label className="text-xs text-foreground">Designation</Label>
                     <Input
                       placeholder="Software Engineer"
                       value={formData.designation}
                       onChange={(e) => setFormData((p) => ({ ...p, designation: e.target.value }))}
-                      className="bg-zinc-950 border-zinc-800 text-sm h-9"
+                      className="bg-background border-border text-foreground text-sm h-9"
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
-                    <Label className="text-xs text-zinc-300">Joining Date</Label>
+                    <Label className="text-xs text-foreground">Joining Date</Label>
                     <Input
                       type="date"
                       value={formData.joiningDate}
                       onChange={(e) => setFormData((p) => ({ ...p, joiningDate: e.target.value }))}
-                      className="bg-zinc-950 border-zinc-800 text-sm h-9"
+                      className="bg-background border-border text-foreground text-sm h-9"
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-xs text-zinc-300">Monthly Basic Salary (INR)</Label>
+                    <Label className="text-xs text-foreground">Monthly Basic Salary (INR)</Label>
                     <Input
                       type="number"
                       placeholder="60000"
                       value={formData.basicSalary}
                       onChange={(e) => setFormData((p) => ({ ...p, basicSalary: e.target.value }))}
-                      className="bg-zinc-950 border-zinc-800 text-sm h-9"
+                      className="bg-background border-border text-foreground text-sm h-9"
                     />
                   </div>
                 </div>
@@ -272,25 +283,25 @@ export default function EmployeesPage() {
       {/* Credentials Dialog (Shown immediately after creating employee) */}
       {createdCredentials && (
         <Dialog open={!!createdCredentials} onOpenChange={() => setCreatedCredentials(null)}>
-          <DialogContent className="bg-zinc-900 border-zinc-800 text-zinc-100 max-w-md">
+          <DialogContent className="bg-card border-border text-foreground max-w-md">
             <DialogHeader>
-              <div className="inline-flex p-2 rounded-full bg-green-500/10 text-green-400 w-fit mb-1">
+              <div className="inline-flex p-2 rounded-full bg-green-500/10 text-green-600 dark:text-green-400 w-fit mb-1">
                 <CheckCircle2 className="h-6 w-6" />
               </div>
-              <DialogTitle className="text-lg font-bold text-white">Employee Onboarded Successfully!</DialogTitle>
-              <DialogDescription className="text-zinc-400 text-xs">
+              <DialogTitle className="text-lg font-bold text-foreground">Employee Onboarded Successfully!</DialogTitle>
+              <DialogDescription className="text-muted-foreground text-xs">
                 Share these initial sign-in credentials with <strong>{createdCredentials.name}</strong>.
               </DialogDescription>
             </DialogHeader>
 
-            <div className="space-y-3 p-4 rounded-lg bg-zinc-950 border border-zinc-800 my-2">
-              <div className="flex justify-between items-center pb-2 border-b border-zinc-800/80">
-                <span className="text-xs text-zinc-400">System Login ID:</span>
-                <span className="font-mono font-bold text-purple-400 text-sm">{createdCredentials.login_id}</span>
+            <div className="space-y-3 p-4 rounded-lg bg-muted border border-border my-2">
+              <div className="flex justify-between items-center pb-2 border-b border-border">
+                <span className="text-xs text-muted-foreground">System Login ID:</span>
+                <span className="font-mono font-bold text-purple-600 dark:text-purple-400 text-sm">{createdCredentials.login_id}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-xs text-zinc-400">Initial Password:</span>
-                <span className="font-mono font-bold text-green-400 text-sm">{createdCredentials.temp_pass}</span>
+                <span className="text-xs text-muted-foreground">Initial Password:</span>
+                <span className="font-mono font-bold text-green-600 dark:text-green-400 text-sm">{createdCredentials.temp_pass}</span>
               </div>
             </div>
 
@@ -314,10 +325,10 @@ export default function EmployeesPage() {
       {/* Search & Filters */}
       <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
         <div className="relative w-full sm:w-80">
-          <Search className="absolute left-3 top-2.5 h-4 w-4 text-zinc-500" />
+          <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search by name, ID (e.g. OIJODO...), dept..."
-            className="pl-9 bg-zinc-950 border-zinc-800 text-sm h-10"
+            placeholder="Search by name, ID, dept..."
+            className="pl-9 bg-card border-border text-foreground text-sm h-10"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -332,7 +343,7 @@ export default function EmployeesPage() {
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap ${
                 selectedDept === dept
                   ? "bg-purple-600 text-white"
-                  : "bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white"
+                  : "bg-card border border-border text-muted-foreground hover:text-foreground"
               }`}
             >
               {dept}
@@ -346,33 +357,33 @@ export default function EmployeesPage() {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {filtered.map((emp) => (
             <Link key={emp.uid} href={`/dashboard/employees/${emp.uid}`}>
-              <Card className="bg-zinc-900 border-zinc-800 hover:border-purple-600/50 transition-all hover:shadow-xl hover:shadow-purple-900/10 cursor-pointer h-full group">
+              <Card className="bg-card border-border hover:border-purple-500/50 transition-all hover:shadow-xl cursor-pointer h-full group">
                 <CardContent className="p-5 flex flex-col items-center text-center space-y-3">
                   <div className="relative">
-                    <Avatar className="h-20 w-20 border-2 border-zinc-700 group-hover:border-purple-500 transition-colors">
+                    <Avatar className="h-20 w-20 border-2 border-border group-hover:border-purple-500 transition-colors">
                       <AvatarImage src={emp.profilePicture} />
-                      <AvatarFallback className="bg-zinc-800 text-xl font-bold text-white">
-                        {emp.fullName.substring(0, 2).toUpperCase()}
+                      <AvatarFallback className="bg-muted text-xl font-bold text-foreground">
+                        {(emp.fullName || "User").substring(0, 2).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
-                    <span className="absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full bg-green-500 border-2 border-zinc-900" title="Active" />
+                    <span className="absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full bg-green-500 border-2 border-card" title="Active" />
                   </div>
 
                   <div>
-                    <h3 className="font-bold text-white text-base group-hover:text-purple-300 transition-colors">
+                    <h3 className="font-bold text-foreground text-base group-hover:text-purple-600 dark:group-hover:text-purple-300 transition-colors">
                       {emp.fullName}
                     </h3>
-                    <p className="text-xs text-zinc-400 mt-0.5">{emp.designation ?? "Employee"}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{emp.designation ?? "Employee"}</p>
                   </div>
 
-                  <div className="w-full pt-3 border-t border-zinc-800 space-y-1.5 text-xs text-zinc-400 text-left">
+                  <div className="w-full pt-3 border-t border-border space-y-1.5 text-xs text-muted-foreground text-left">
                     <div className="flex items-center justify-between">
-                      <span className="text-zinc-500">Login ID:</span>
-                      <span className="font-mono font-semibold text-purple-400">{emp.employeeId}</span>
+                      <span className="text-muted-foreground">Login ID:</span>
+                      <span className="font-mono font-semibold text-purple-600 dark:text-purple-400">{emp.employeeId}</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-zinc-500">Dept:</span>
-                      <Badge variant="outline" className="border-purple-500/30 text-purple-300 bg-purple-500/10 text-[10px]">
+                      <span className="text-muted-foreground">Dept:</span>
+                      <Badge variant="outline" className="border-purple-500/30 text-purple-600 dark:text-purple-300 bg-purple-500/10 text-[10px]">
                         {emp.department ?? "General"}
                       </Badge>
                     </div>
@@ -384,10 +395,10 @@ export default function EmployeesPage() {
         </div>
       ) : (
         /* List Table View */
-        <div className="rounded-xl border border-zinc-800 bg-zinc-900 overflow-hidden shadow-lg">
+        <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm">
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm text-zinc-300">
-              <thead className="bg-zinc-950 text-xs uppercase tracking-wider text-zinc-400 border-b border-zinc-800">
+            <table className="w-full text-left text-sm text-foreground">
+              <thead className="bg-muted/50 text-xs uppercase tracking-wider text-muted-foreground border-b border-border">
                 <tr>
                   <th className="py-3.5 px-4">Employee</th>
                   <th className="py-3.5 px-4">Login ID</th>
@@ -397,32 +408,32 @@ export default function EmployeesPage() {
                   <th className="py-3.5 px-4 text-right">Action</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-800">
+              <tbody className="divide-y divide-border">
                 {filtered.map((emp) => (
-                  <tr key={emp.uid} className="hover:bg-zinc-800/40 transition-colors">
+                  <tr key={emp.uid} className="hover:bg-accent/40 transition-colors">
                     <td className="py-3 px-4 flex items-center gap-3">
-                      <Avatar className="h-9 w-9 border border-zinc-700">
+                      <Avatar className="h-9 w-9 border border-border">
                         <AvatarImage src={emp.profilePicture} />
-                        <AvatarFallback className="bg-zinc-800 text-xs text-white">
-                          {emp.fullName.substring(0, 2).toUpperCase()}
+                        <AvatarFallback className="bg-muted text-xs text-foreground">
+                          {(emp.fullName || "User").substring(0, 2).toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <p className="font-semibold text-white">{emp.fullName}</p>
-                        <p className="text-xs text-zinc-500">{emp.email}</p>
+                        <p className="font-semibold text-foreground">{emp.fullName}</p>
+                        <p className="text-xs text-muted-foreground">{emp.email}</p>
                       </div>
                     </td>
-                    <td className="py-3 px-4 font-mono font-semibold text-purple-400">{emp.employeeId}</td>
+                    <td className="py-3 px-4 font-mono font-semibold text-purple-600 dark:text-purple-400">{emp.employeeId}</td>
                     <td className="py-3 px-4">
-                      <Badge variant="outline" className="border-zinc-700 text-zinc-300 text-xs">
+                      <Badge variant="outline" className="border-border text-foreground text-xs">
                         {emp.department ?? "General"}
                       </Badge>
                     </td>
-                    <td className="py-3 px-4 text-zinc-400">{emp.designation ?? "Specialist"}</td>
-                    <td className="py-3 px-4 text-xs text-zinc-400">{emp.phone || "—"}</td>
+                    <td className="py-3 px-4 text-muted-foreground">{emp.designation ?? "Specialist"}</td>
+                    <td className="py-3 px-4 text-xs text-muted-foreground">{emp.phone || "—"}</td>
                     <td className="py-3 px-4 text-right">
                       <Link href={`/dashboard/employees/${emp.uid}`}>
-                        <Button size="sm" variant="ghost" className="text-purple-400 hover:text-purple-300 text-xs">
+                        <Button size="sm" variant="ghost" className="text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 text-xs">
                           View Details
                         </Button>
                       </Link>
@@ -436,7 +447,7 @@ export default function EmployeesPage() {
       )}
 
       {filtered.length === 0 && (
-        <div className="text-center py-16 text-zinc-500 bg-zinc-900/30 rounded-xl border border-zinc-800/60">
+        <div className="text-center py-16 text-muted-foreground bg-card rounded-xl border border-border">
           No employees matching &quot;{searchTerm}&quot;.
         </div>
       )}

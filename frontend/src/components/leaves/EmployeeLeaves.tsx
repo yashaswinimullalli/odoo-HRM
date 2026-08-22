@@ -49,12 +49,12 @@ export function EmployeeLeaves() {
 
   const statusBadge = (status: string) => {
     const map: Record<string, string> = {
-      Approved: "border-green-500 text-green-400",
-      Rejected: "border-red-500 text-red-400",
-      Pending: "border-orange-500 text-orange-400",
+      Approved: "border-green-500 text-green-600 dark:text-green-400 bg-green-500/10",
+      Rejected: "border-red-500 text-red-600 dark:text-red-400 bg-red-500/10",
+      Pending: "border-amber-500 text-amber-600 dark:text-amber-400 bg-amber-500/10",
     };
     return (
-      <Badge variant="outline" className={map[status] ?? "border-zinc-500 text-zinc-400"}>
+      <Badge variant="outline" className={map[status] ?? "border-border text-muted-foreground"}>
         {status}
       </Badge>
     );
@@ -63,23 +63,23 @@ export function EmployeeLeaves() {
   return (
     <div className="grid gap-6 md:grid-cols-3">
       {/* Apply Form */}
-      <Card className="bg-zinc-900 border-zinc-800 md:col-span-1 h-fit">
+      <Card className="bg-card border-border md:col-span-1 h-fit transition-colors duration-200">
         <CardHeader>
-          <CardTitle className="text-white">Apply for Leave</CardTitle>
-          <CardDescription className="text-zinc-400">Submit a new time-off request.</CardDescription>
+          <CardTitle className="text-foreground">Apply for Leave</CardTitle>
+          <CardDescription className="text-muted-foreground">Submit a new time-off request.</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label className="text-zinc-300">Leave Type</Label>
+              <Label className="text-foreground">Leave Type</Label>
               <Select
                 value={formData.leaveType}
                 onValueChange={(v) => setFormData((p) => ({ ...p, leaveType: v as LeaveRecord["leaveType"] }))}
               >
-                <SelectTrigger className="bg-zinc-950 border-zinc-800">
+                <SelectTrigger className="bg-background border-border text-foreground">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-zinc-900 border-zinc-800 text-zinc-100">
+                <SelectContent className="bg-card border-border text-foreground">
                   <SelectItem value="Paid Leave">Paid Leave</SelectItem>
                   <SelectItem value="Sick Leave">Sick Leave</SelectItem>
                   <SelectItem value="Unpaid Leave">Unpaid Leave</SelectItem>
@@ -88,33 +88,33 @@ export function EmployeeLeaves() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label className="text-zinc-300">Start Date</Label>
+                <Label className="text-foreground">Start Date</Label>
                 <Input
                   type="date"
                   required
                   value={formData.startDate}
                   onChange={(e) => setFormData((p) => ({ ...p, startDate: e.target.value }))}
-                  className="bg-zinc-950 border-zinc-800 text-zinc-300"
+                  className="bg-background border-border text-foreground"
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-zinc-300">End Date</Label>
+                <Label className="text-foreground">End Date</Label>
                 <Input
                   type="date"
                   required
                   value={formData.endDate}
                   onChange={(e) => setFormData((p) => ({ ...p, endDate: e.target.value }))}
-                  className="bg-zinc-950 border-zinc-800 text-zinc-300"
+                  className="bg-background border-border text-foreground"
                 />
               </div>
             </div>
             <div className="space-y-2">
-              <Label className="text-zinc-300">Reason / Remarks</Label>
+              <Label className="text-foreground">Reason / Remarks</Label>
               <Textarea
                 required
                 value={formData.remarks}
                 onChange={(e) => setFormData((p) => ({ ...p, remarks: e.target.value }))}
-                className="bg-zinc-950 border-zinc-800 focus-visible:ring-purple-600 min-h-[100px]"
+                className="bg-background border-border text-foreground focus-visible:ring-purple-600 min-h-[100px]"
                 placeholder="Please describe your reason..."
               />
             </div>
@@ -131,39 +131,39 @@ export function EmployeeLeaves() {
       </Card>
 
       {/* Leave History */}
-      <Card className="bg-zinc-900 border-zinc-800 md:col-span-2">
+      <Card className="bg-card border-border md:col-span-2 transition-colors duration-200">
         <CardHeader>
-          <CardTitle className="text-white">My Leave History</CardTitle>
+          <CardTitle className="text-foreground">My Leave History</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="rounded-md border border-zinc-800">
+          <div className="rounded-md border border-border">
             <Table>
-              <TableHeader className="bg-zinc-950/50">
-                <TableRow className="border-zinc-800 hover:bg-transparent">
-                  <TableHead className="text-zinc-400">Type</TableHead>
-                  <TableHead className="text-zinc-400">Duration</TableHead>
-                  <TableHead className="text-zinc-400">Status</TableHead>
-                  <TableHead className="text-zinc-400">Admin Comment</TableHead>
+              <TableHeader className="bg-muted/50">
+                <TableRow className="border-border hover:bg-transparent">
+                  <TableHead className="text-muted-foreground">Type</TableHead>
+                  <TableHead className="text-muted-foreground">Duration</TableHead>
+                  <TableHead className="text-muted-foreground">Status</TableHead>
+                  <TableHead className="text-muted-foreground">Admin Comment</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {leaves.map((leave) => (
-                  <TableRow key={leave.id} className="border-zinc-800 hover:bg-zinc-800/50">
-                    <TableCell className="font-medium text-zinc-300">{leave.leaveType}</TableCell>
-                    <TableCell className="text-zinc-300 text-sm">
+                  <TableRow key={leave.id} className="border-border hover:bg-accent/40">
+                    <TableCell className="font-medium text-foreground">{leave.leaveType}</TableCell>
+                    <TableCell className="text-foreground text-sm">
                       {leave.startDate}
                       <br />
-                      <span className="text-zinc-500">to</span> {leave.endDate}
+                      <span className="text-muted-foreground">to</span> {leave.endDate}
                     </TableCell>
                     <TableCell>{statusBadge(leave.status)}</TableCell>
-                    <TableCell className="text-zinc-400 text-sm max-w-[200px] truncate">
+                    <TableCell className="text-muted-foreground text-sm max-w-[200px] truncate">
                       {leave.adminComment || "--"}
                     </TableCell>
                   </TableRow>
                 ))}
                 {leaves.length === 0 && (
-                  <TableRow className="border-zinc-800">
-                    <TableCell colSpan={4} className="text-center text-zinc-500 py-8">
+                  <TableRow className="border-border">
+                    <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
                       No leave history yet.
                     </TableCell>
                   </TableRow>
