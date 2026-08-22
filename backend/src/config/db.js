@@ -10,8 +10,9 @@ let poolConfig = {};
 
 if (process.env.DATABASE_URL) {
   // Production / Cloud (Neon, Render, Railway, Supabase, etc.)
+  const cleanConnStr = process.env.DATABASE_URL.replace(/(\?|&)sslmode=(require|prefer|verify-ca)/, '$1sslmode=verify-full');
   poolConfig = {
-    connectionString: process.env.DATABASE_URL,
+    connectionString: cleanConnStr,
     ssl: process.env.DB_SSL === 'false' ? false : { rejectUnauthorized: false },
     max: parseInt(process.env.DB_MAX_CONNECTIONS || '20', 10),
     idleTimeoutMillis: 30000,
