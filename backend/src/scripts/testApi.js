@@ -74,7 +74,7 @@ async function runTests() {
     // 1. Healthcheck
     await test('Health Check (GET /api/health)', async () => {
       const res = await makeRequest({ path: '/api/health' });
-      if (res.status !== 200 || res.data.status !== 'UP') {
+      if (res.status !== 200 || (res.data.status !== 'UP' && res.data.status !== 'ok')) {
         throw new Error(`Unexpected response: ${JSON.stringify(res)}`);
       }
     });

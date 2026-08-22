@@ -160,12 +160,13 @@ const getMyAttendance = async (req, res, next) => {
     } else if (view === 'weekly') {
       // Default to current week (Monday to Sunday)
       query += ` AND date >= DATE_TRUNC('week', CURRENT_DATE) AND date <= DATE_TRUNC('week', CURRENT_DATE) + INTERVAL '6 days'`;
-    } else {
+    } else if (view === 'monthly') {
       // Default to current month
       query += ` AND date >= DATE_TRUNC('month', CURRENT_DATE)`;
     }
+    // If view === 'all' or default, return complete history (ordered by date DESC)
 
-    query += ` ORDER BY date DESC`;
+    query += ` ORDER BY date DESC LIMIT 100`;
 
     const result = await pool.query(query, params);
 

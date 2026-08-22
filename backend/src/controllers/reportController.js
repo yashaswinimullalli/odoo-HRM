@@ -386,16 +386,13 @@ const getSalarySlip = async (req, res, next) => {
         e.id,
         e.employee_code,
         e.first_name || ' ' || e.last_name AS employee_name,
-        e.email,
-        e.phone_number,
+        u.email,
+        e.phone AS phone_number,
         e.joining_date,
-        e.pan_number,
-        e.bank_account_number,
-        e.bank_name,
-        e.bank_ifsc_code,
         d.name AS department_name,
         ds.title AS designation_title
       FROM employees e
+      JOIN users u ON e.user_id = u.id
       LEFT JOIN departments d ON e.department_id = d.id
       LEFT JOIN designations ds ON e.designation_id = ds.id
       WHERE e.id = $1

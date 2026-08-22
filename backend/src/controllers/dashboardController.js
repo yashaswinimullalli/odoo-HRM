@@ -237,7 +237,7 @@ const getAdminActionItems = async (req, res, next) => {
       WHERE a.date = CURRENT_DATE AND a.status = 'ABSENT'
     `);
 
-    // 3. Incomplete Employee Profiles (Missing bank info or PAN or emergency contact)
+    // 3. Incomplete Employee Profiles (Missing phone or residential address)
     const incompleteProfilesRes = await pool.query(`
       SELECT 
         e.id AS employee_id,
@@ -245,9 +245,8 @@ const getAdminActionItems = async (req, res, next) => {
         e.first_name || ' ' || e.last_name AS employee_name,
         d.name AS department_name,
         CASE 
-          WHEN e.bank_account_number IS NULL OR e.bank_account_number = '' THEN 'Missing Bank Account'
-          WHEN e.pan_number IS NULL OR e.pan_number = '' THEN 'Missing PAN Card'
-          WHEN e.emergency_contact_phone IS NULL OR e.emergency_contact_phone = '' THEN 'Missing Emergency Contact'
+          WHEN e.phone IS NULL OR e.phone = '' THEN 'Missing Contact Phone'
+          WHEN e.address IS NULL OR e.address = '' THEN 'Missing Residential Address'
           ELSE 'Incomplete Profile'
         END AS missing_detail,
         'PROFILE_COMPLIANCE' AS item_type,
@@ -255,7 +254,7 @@ const getAdminActionItems = async (req, res, next) => {
       FROM employees e
       LEFT JOIN departments d ON e.department_id = d.id
       WHERE e.employment_status = 'ACTIVE' 
-        AND (e.bank_account_number IS NULL OR e.pan_number IS NULL OR e.emergency_contact_phone IS NULL)
+        AND (e.phone IS NULL OR e.address IS NULL OR e.phone = '' OR e.address = '')
       LIMIT 10
     `);
 

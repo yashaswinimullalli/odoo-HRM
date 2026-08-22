@@ -86,11 +86,13 @@ export function mapBackendUserToProfile(user: any): UserProfile {
     employeeId: emp.employee_code || user.employee_code || `EMP${String(user.id).padStart(3, "0")}`,
     email: user.email,
     role: (user.role?.toLowerCase() === "admin" || user.role?.toLowerCase() === "hr") ? "admin" : "employee",
-    department: emp.department_name || emp.department || "General",
+    department: emp.department_name || emp.department || "Engineering",
     designation: emp.designation_title || emp.designation || "Specialist",
-    joiningDate: emp.joining_date ? emp.joining_date.split("T")[0] : new Date().toISOString().split("T")[0],
-    phone: emp.phone_number || "",
-    address: emp.current_address || "",
+    joiningDate: emp.joining_date ? (typeof emp.joining_date === "string" ? emp.joining_date.split("T")[0] : new Date(emp.joining_date).toISOString().split("T")[0]) : new Date().toISOString().split("T")[0],
+    phone: emp.phone_number || emp.phone || "",
+    address: emp.current_address || emp.address || "",
+    gender: emp.gender || "PREFER_NOT_TO_SAY",
+    employmentType: emp.employment_status || "ACTIVE",
     profilePicture: emp.profile_picture_url || "",
     emailVerified: user.is_verified ?? true,
   };
@@ -275,6 +277,19 @@ export const api = {
     }));
   },
 
+  getMySalaryStructure: async () => {
+    const res = await request<{ success: boolean; salary_structure?: any; data?: any }>("/payroll/my/structure");
+    const s = res.salary_structure || res.data || {};
+    return {
+      basicSalary: parseFloat(s.basic_salary || 0),
+      hra: parseFloat(s.hra || 0),
+      allowances: parseFloat(s.allowances || 0),
+      deductions: parseFloat(s.deductions || 0),
+      netSalary: parseFloat(s.net_salary || 0),
+      currency: s.currency || "INR",
+    };
+  },
+
   getAllPayrolls: async (month?: number, year?: number) => {
     const params = new URLSearchParams();
     if (month) params.append("month", String(month));
@@ -373,6 +388,13 @@ export const api = {
 
   updateEmployee: async (id: string, data: any) => {
     return request<{ success: boolean; message: string; employee?: any }>(`/employees/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  },
+
+  updateMyProfile: async (data: { phone?: string; address?: string; profile_picture_url?: string }) => {
+    return request<{ success: boolean; message: string; profile?: any }>("/employees/me", {
       method: "PUT",
       body: JSON.stringify(data),
     });

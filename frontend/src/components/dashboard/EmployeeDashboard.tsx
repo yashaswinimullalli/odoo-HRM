@@ -4,16 +4,9 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Clock, Calendar, LogIn, LogOut, User, FileText, Loader2 } from "lucide-react";
+import { Clock, Calendar, LogIn, LogOut, User, FileText, Loader2, DollarSign } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/lib/api";
-import {
-  getTodayAttendance,
-  getLeavesByUser,
-  getPayrollByUser,
-  checkIn as mockCheckIn,
-  checkOut as mockCheckOut,
-} from "@/lib/mockStore";
 import { format } from "date-fns";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -25,55 +18,57 @@ export function EmployeeDashboard() {
   const [pendingLeaves, setPendingLeaves] = useState(0);
   const [latestSalary, setLatestSalary] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [dataLoading, setDataLoading] = useState(true);
 
-  useEffect(() => {
+  const loadData = async () => {
     if (!profile) return;
     const currentProfile = profile;
 
-    async function loadData() {
-      try {
-        const dashRes = await api.getEmployeeDashboard();
-        if (dashRes.success && dashRes.data) {
-          const d = dashRes.data;
-          if (d.today_attendance && d.today_attendance.status !== "NOT_CHECKED_IN") {
-            setTodayRecord({
-              id: String(d.today_attendance.id),
-              userId: currentProfile.uid,
-              employeeId: currentProfile.employeeId,
-              employeeName: currentProfile.fullName,
-              date: d.today_attendance.date,
-              checkInTime: d.today_attendance.check_in ? d.today_attendance.check_in.substring(11, 16) : null,
-              checkOutTime: d.today_attendance.check_out ? d.today_attendance.check_out.substring(11, 16) : null,
-              totalWorkingHours: d.today_attendance.working_hours ? `${d.today_attendance.working_hours}h` : null,
-              status: d.today_attendance.status === "HALF_DAY" ? "Half-day" : d.today_attendance.status === "LEAVE" ? "Leave" : "Present",
-            });
-          }
-          if (d.recent_leaves) {
-            setPendingLeaves(d.recent_leaves.filter((l: any) => l.status === "PENDING").length);
-          }
-          if (d.latest_payroll) {
-            setLatestSalary({
-              netSalary: parseFloat(d.latest_payroll.net_salary),
-              basicSalary: parseFloat(d.latest_payroll.basic_salary || 0),
-              allowances: parseFloat(d.latest_payroll.allowances || 0) + parseFloat(d.latest_payroll.hra || 0),
-              deductions: parseFloat(d.latest_payroll.deductions || 0),
-            });
-          }
-          return;
+    try {
+      setDataLoading(true);
+      const dashRes = await api.getEmployeeDashboard();
+      if (dashRes.success && dashRes.data) {
+        const d = dashRes.data;
+        if (d.today_attendance && d.today_attendance.status !== "NOT_CHECKED_IN") {
+          setTodayRecord({
+            id: String(d.today_attendance.id),
+            userId: currentProfile.uid,
+            employeeId: currentProfile.employeeId,
+            employeeName: currentProfile.fullName,
+            date: d.today_attendance.date,
+            checkInTime: d.today_attendance.check_in ? d.today_attendance.check_in.substring(11, 16) : null,
+            checkOutTime: d.today_attendance.check_out ? d.today_attendance.check_out.substring(11, 16) : null,
+            totalWorkingHours: d.today_attendance.working_hours ? `${d.today_attendance.working_hours}h` : null,
+            status: d.today_attendance.status === "HALF_DAY" ? "Half-day" : d.today_attendance.status === "LEAVE" ? "Leave" : "Present",
+          });
+        } else {
+          setTodayRecord(null);
         }
-      } catch (err) {
-        console.warn("[EmployeeDashboard] API fetch failed, using fallback mock data:", err);
+
+        if (d.recent_leaves) {
+          setPendingLeaves(d.recent_leaves.filter((l: any) => l.status === "PENDING").length);
+        }
+
+        if (d.latest_payroll) {
+          setLatestSalary({
+            netSalary: parseFloat(d.latest_payroll.net_salary || 0),
+            basicSalary: parseFloat(d.latest_payroll.basic_salary || 0),
+            allowances: parseFloat(d.latest_payroll.allowances || 0) + parseFloat(d.latest_payroll.hra || 0),
+            deductions: parseFloat(d.latest_payroll.deductions || 0),
+            month: d.latest_payroll.month,
+            year: d.latest_payroll.year,
+            status: d.latest_payroll.payment_status,
+          });
+        }
       }
-
-      // Fallback
-      const att = getTodayAttendance(currentProfile.uid);
-      setTodayRecord(att ?? null);
-      const leaves = getLeavesByUser(currentProfile.uid);
-      setPendingLeaves(leaves.filter((l) => l.status === "Pending").length);
-      const pay = getPayrollByUser(currentProfile.uid);
-      setLatestSalary(pay[0] ?? null);
+    } catch (err: any) {
+      console.warn("[EmployeeDashboard] API fetch error:", err);
+    } finally {
+      setDataLoading(false);
     }
+  };
 
+  useEffect(() => {
     loadData();
   }, [profile]);
 
@@ -84,11 +79,9 @@ export function EmployeeDashboard() {
       const record = await api.checkIn();
       setTodayRecord(record);
       toast.success(`Checked in successfully at ${record.checkInTime || "now"}!`);
+      loadData();
     } catch (err: any) {
-      // Mock fallback
-      const record = mockCheckIn(profile.uid, profile);
-      setTodayRecord(record);
-      toast.success(`Checked in at ${record.checkInTime}`);
+      toast.error(err.message || "Check-in failed.");
     } finally {
       setLoading(false);
     }
@@ -100,11 +93,10 @@ export function EmployeeDashboard() {
     try {
       const record = await api.checkOut();
       setTodayRecord(record);
-      toast.success(`Checked out at ${record.checkOutTime}!`);
+      toast.success(`Checked out at ${record.checkOutTime || "now"}!`);
+      loadData();
     } catch (err: any) {
-      const record = mockCheckOut(todayRecord.id);
-      setTodayRecord(record);
-      toast.success(`Checked out at ${record?.checkOutTime}`);
+      toast.error(err.message || "Check-out failed.");
     } finally {
       setLoading(false);
     }
@@ -122,28 +114,28 @@ export function EmployeeDashboard() {
   return (
     <div className="space-y-6">
       {/* Welcome + Date */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 bg-card rounded-xl border border-border transition-colors duration-200">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 bg-card rounded-xl border border-border transition-colors duration-200 shadow-sm">
         <div>
           <h2 className="text-xl font-bold text-foreground">
             Good {new Date().getHours() < 12 ? "Morning" : new Date().getHours() < 17 ? "Afternoon" : "Evening"},{" "}
             {profile?.fullName?.split(" ")[0]} 👋
           </h2>
-          <p className="text-sm text-muted-foreground mt-1">{today}</p>
+          <p className="text-xs text-muted-foreground mt-1">{today} · <span className="font-mono text-purple-600 dark:text-purple-400 font-semibold">{profile?.employeeId}</span></p>
         </div>
         <div className="flex gap-3">
           <Button
             onClick={handleCheckIn}
-            disabled={loading || !!todayRecord}
-            className="bg-purple-600 hover:bg-purple-700 text-white gap-2"
+            disabled={loading || !!todayRecord?.checkInTime}
+            className="bg-purple-600 hover:bg-purple-700 text-white gap-2 min-w-[120px]"
           >
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogIn className="h-4 w-4" />}
-            {todayRecord ? "Checked In" : "Check In"}
+            {todayRecord?.checkInTime ? "Checked In" : "Check In"}
           </Button>
           <Button
             onClick={handleCheckOut}
-            disabled={loading || !todayRecord || !!todayRecord.checkOutTime}
+            disabled={loading || !todayRecord?.checkInTime || !!todayRecord?.checkOutTime}
             variant="outline"
-            className="border-border text-foreground hover:bg-accent gap-2"
+            className="border-border text-foreground hover:bg-accent gap-2 min-w-[120px]"
           >
             <LogOut className="h-4 w-4" />
             {todayRecord?.checkOutTime ? "Checked Out" : "Check Out"}
@@ -153,7 +145,7 @@ export function EmployeeDashboard() {
 
       {/* Stats Cards */}
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
-        <Card className="bg-card border-border transition-colors duration-200">
+        <Card className="bg-card border-border transition-colors duration-200 shadow-sm">
           <CardContent className="p-4">
             <p className="text-xs text-muted-foreground mb-2">Today&apos;s Status</p>
             {todayRecord ? (
@@ -172,19 +164,19 @@ export function EmployeeDashboard() {
             )}
           </CardContent>
         </Card>
-        <Card className="bg-card border-border transition-colors duration-200">
+        <Card className="bg-card border-border transition-colors duration-200 shadow-sm">
           <CardContent className="p-4">
             <p className="text-xs text-muted-foreground mb-1">Check In</p>
-            <p className="text-xl font-bold text-foreground">{todayRecord?.checkInTime ?? "--:--"}</p>
+            <p className="text-xl font-bold text-foreground font-mono">{todayRecord?.checkInTime ?? "--:--"}</p>
           </CardContent>
         </Card>
-        <Card className="bg-card border-border transition-colors duration-200">
+        <Card className="bg-card border-border transition-colors duration-200 shadow-sm">
           <CardContent className="p-4">
             <p className="text-xs text-muted-foreground mb-1">Check Out</p>
-            <p className="text-xl font-bold text-foreground">{todayRecord?.checkOutTime ?? "--:--"}</p>
+            <p className="text-xl font-bold text-foreground font-mono">{todayRecord?.checkOutTime ?? "--:--"}</p>
           </CardContent>
         </Card>
-        <Card className="bg-card border-border transition-colors duration-200">
+        <Card className="bg-card border-border transition-colors duration-200 shadow-sm">
           <CardContent className="p-4">
             <p className="text-xs text-muted-foreground mb-1">Pending Leaves</p>
             <p className="text-xl font-bold text-foreground">{pendingLeaves}</p>
@@ -194,9 +186,14 @@ export function EmployeeDashboard() {
 
       {/* Salary Card + Quick Links */}
       <div className="grid gap-4 md:grid-cols-2">
-        <Card className="bg-card border-border transition-colors duration-200">
-          <CardHeader className="pb-2">
+        <Card className="bg-card border-border transition-colors duration-200 shadow-sm">
+          <CardHeader className="pb-2 flex flex-row items-center justify-between">
             <CardTitle className="text-base text-foreground">Current Month Salary</CardTitle>
+            <Link href="/dashboard/payroll">
+              <Button variant="ghost" size="sm" className="text-purple-600 dark:text-purple-400 hover:text-purple-700 text-xs">
+                View Payroll
+              </Button>
+            </Link>
           </CardHeader>
           <CardContent>
             {latestSalary ? (
@@ -207,13 +204,16 @@ export function EmployeeDashboard() {
                 </p>
               </div>
             ) : (
-              <p className="text-muted-foreground text-sm">No payroll data available.</p>
+              <div className="py-3">
+                <p className="text-muted-foreground text-sm">Monthly salary structure active.</p>
+                <p className="text-xs text-muted-foreground mt-1">View detailed slip breakdown in the Payroll tab.</p>
+              </div>
             )}
           </CardContent>
         </Card>
 
         {/* Quick Access */}
-        <Card className="bg-card border-border transition-colors duration-200">
+        <Card className="bg-card border-border transition-colors duration-200 shadow-sm">
           <CardHeader className="pb-2">
             <CardTitle className="text-base text-foreground">Quick Access</CardTitle>
           </CardHeader>
@@ -225,7 +225,7 @@ export function EmployeeDashboard() {
                   <Link
                     key={link.href}
                     href={link.href}
-                    className="flex items-center gap-2 p-3 rounded-lg bg-background border border-border hover:border-purple-600/40 transition-colors"
+                    className="flex items-center gap-2 p-3 rounded-lg bg-background border border-border hover:border-purple-600/40 transition-colors shadow-xs"
                   >
                     <Icon className={`h-4 w-4 ${link.color}`} />
                     <span className="text-sm text-foreground">{link.label}</span>

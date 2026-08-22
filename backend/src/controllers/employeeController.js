@@ -455,18 +455,16 @@ const updateEmployeeByAdmin = async (req, res, next) => {
       const basic = parseFloat(basic_salary) || 0;
       const h = parseFloat(hra) || 0;
       const allow = parseFloat(allowances) || 0;
-      const ded = parseFloat(deductions) || 0;
-      const net = basic + h + allow - ded;
-
       await client.query(
-             updated_at = CURRENT_TIMESTAMP`,
+        `INSERT INTO salary_structures (employee_id, basic_salary, hra, allowances, deductions, net_salary, currency)
+         VALUES ($1, $2, $3, $4, $5, $6, 'INR')
+         ON CONFLICT (employee_id) DO UPDATE 
+         SET basic_salary = $2, hra = $3, allowances = $4, deductions = $5, net_salary = $6, updated_at = CURRENT_TIMESTAMP`,
         [id, basic, h, allow, ded, net]
       );
     }
 
     await client.query('COMMIT');
-
-    const updatedEmp = empRes.rows[0];
 
     await logAudit({
       userId: req.user.user_id,

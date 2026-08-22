@@ -8,6 +8,7 @@ export interface UserProfile {
   role: Role;
   phone?: string;
   address?: string;
+  gender?: string;
   department?: string;
   designation?: string;
   joiningDate?: string;
@@ -52,6 +53,8 @@ export interface PayrollRecord {
   deductions: number;
   netSalary: number;
   createdAt: string;
+  paymentStatus?: string;
+  paymentDate?: string | null;
 }
 
 export interface Notification {
