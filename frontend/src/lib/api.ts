@@ -5,7 +5,8 @@
 
 import { UserProfile, AttendanceRecord, LeaveRecord, PayrollRecord, Notification } from "./types";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL || "https://odoo-hrm.onrender.com/api";
 const TOKEN_KEY = "dayflow_auth_token";
 
 export const getAuthToken = (): string | null => {
