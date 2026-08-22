@@ -112,11 +112,11 @@ export default function EmployeeDetailPage() {
 
   return (
     <div className="space-y-6 max-w-5xl">
-      {/* Top Bar Navigation */}
-      <div className="flex items-center gap-4">
+      {/* Header with back button */}
+      <div className="flex items-center gap-3">
         <Link href="/dashboard/employees">
-          <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground hover:bg-accent">
-            <ArrowLeft className="h-5 w-5" />
+          <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:text-foreground">
+            <ArrowLeft className="h-4 w-4" />
           </Button>
         </Link>
         <div>
@@ -125,8 +125,8 @@ export default function EmployeeDetailPage() {
         </div>
       </div>
 
-      {/* Header Profile Summary Card */}
-      <Card className="bg-card border-border text-foreground shadow-sm overflow-hidden transition-colors duration-200">
+      {/* Hero Overview Card */}
+      <Card className="bg-card border-border overflow-hidden shadow-sm">
         <div className="h-24 bg-gradient-to-r from-purple-600/30 via-purple-500/10 to-transparent border-b border-border" />
         <CardContent className="p-6 pt-0 relative">
           <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4 -mt-12 mb-4">
@@ -158,30 +158,42 @@ export default function EmployeeDetailPage() {
         </CardContent>
       </Card>
 
-      {/* Detailed Tabs */}
-      <Tabs defaultValue="personal" className="space-y-4">
-        <TabsList className="bg-muted border border-border p-1 rounded-xl">
-          <TabsTrigger value="personal" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white text-xs gap-1.5 py-2">
-            <User className="h-3.5 w-3.5" />
-            Personal Info
-          </TabsTrigger>
-          <TabsTrigger value="job" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white text-xs gap-1.5 py-2">
-            <Briefcase className="h-3.5 w-3.5" />
-            Job Details
-          </TabsTrigger>
-          <TabsTrigger value="salary" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white text-xs gap-1.5 py-2">
-            <CreditCard className="h-3.5 w-3.5" />
-            Salary & Payroll
-          </TabsTrigger>
-          <TabsTrigger value="documents" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white text-xs gap-1.5 py-2">
-            <FileText className="h-3.5 w-3.5" />
-            Documents
-          </TabsTrigger>
-        </TabsList>
+      {/* Detailed Tabs & Form */}
+      <form onSubmit={handleSave} className="space-y-6">
+        <Tabs defaultValue="personal" className="w-full flex flex-col gap-4">
+          <TabsList className="bg-muted/80 border border-border p-1.5 rounded-xl inline-flex h-auto w-full sm:w-auto flex-wrap gap-1.5">
+            <TabsTrigger
+              value="personal"
+              className="data-[state=active]:bg-purple-600 data-[state=active]:text-white text-xs gap-2 py-2 px-4 rounded-lg font-medium"
+            >
+              <User className="h-3.5 w-3.5" />
+              Personal Info
+            </TabsTrigger>
+            <TabsTrigger
+              value="job"
+              className="data-[state=active]:bg-purple-600 data-[state=active]:text-white text-xs gap-2 py-2 px-4 rounded-lg font-medium"
+            >
+              <Briefcase className="h-3.5 w-3.5" />
+              Job Details
+            </TabsTrigger>
+            <TabsTrigger
+              value="salary"
+              className="data-[state=active]:bg-purple-600 data-[state=active]:text-white text-xs gap-2 py-2 px-4 rounded-lg font-medium"
+            >
+              <CreditCard className="h-3.5 w-3.5" />
+              Salary & Payroll
+            </TabsTrigger>
+            <TabsTrigger
+              value="documents"
+              className="data-[state=active]:bg-purple-600 data-[state=active]:text-white text-xs gap-2 py-2 px-4 rounded-lg font-medium"
+            >
+              <FileText className="h-3.5 w-3.5" />
+              Documents
+            </TabsTrigger>
+          </TabsList>
 
-        <form onSubmit={handleSave}>
           {/* Tab 1: Personal Info */}
-          <TabsContent value="personal" className="space-y-4">
+          <TabsContent value="personal" className="space-y-4 pt-2">
             <Card className="bg-card border-border transition-colors duration-200">
               <CardHeader>
                 <CardTitle className="text-base text-foreground">Personal Information</CardTitle>
@@ -214,7 +226,7 @@ export default function EmployeeDetailPage() {
           </TabsContent>
 
           {/* Tab 2: Job Details */}
-          <TabsContent value="job" className="space-y-4">
+          <TabsContent value="job" className="space-y-4 pt-2">
             <Card className="bg-card border-border transition-colors duration-200">
               <CardHeader>
                 <CardTitle className="text-base text-foreground">Employment & Designation</CardTitle>
@@ -222,24 +234,20 @@ export default function EmployeeDetailPage() {
               <CardContent className="space-y-4">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-1.5">
-                    <Label className="text-xs text-foreground">Login ID / Employee Code</Label>
-                    <Input value={empData.employeeId} disabled className="bg-muted border-border font-mono text-purple-600 dark:text-purple-400 text-sm h-10" />
-                  </div>
-                  <div className="space-y-1.5">
                     <Label className="text-xs text-foreground">Department</Label>
                     <Input value={empData.department || ""} onChange={(e) => handleChange("department", e.target.value)} className="bg-background border-border text-foreground text-sm h-10" />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-xs text-foreground">Designation / Role Title</Label>
+                    <Label className="text-xs text-foreground">Designation Title</Label>
                     <Input value={empData.designation || ""} onChange={(e) => handleChange("designation", e.target.value)} className="bg-background border-border text-foreground text-sm h-10" />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-xs text-foreground">Joining Date</Label>
-                    <Input type="date" value={empData.joiningDate || ""} onChange={(e) => handleChange("joiningDate", e.target.value)} className="bg-background border-border text-foreground text-sm h-10" />
+                    <Label className="text-xs text-foreground">Date of Joining</Label>
+                    <Input type="date" value={empData.joiningDate ? empData.joiningDate.split("T")[0] : ""} onChange={(e) => handleChange("joiningDate", e.target.value)} className="bg-background border-border text-foreground text-sm h-10" />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-xs text-foreground">Employment Type</Label>
-                    <Input value={empData.employmentType || "Full-time"} onChange={(e) => handleChange("employmentType", e.target.value)} className="bg-background border-border text-foreground text-sm h-10" />
+                    <Label className="text-xs text-foreground">Employment Status</Label>
+                    <Input value={empData.employmentType || "ACTIVE"} onChange={(e) => handleChange("employmentType", e.target.value)} className="bg-background border-border text-foreground text-sm h-10" />
                   </div>
                 </div>
               </CardContent>
@@ -247,58 +255,39 @@ export default function EmployeeDetailPage() {
           </TabsContent>
 
           {/* Tab 3: Salary & Payroll */}
-          <TabsContent value="salary" className="space-y-4">
+          <TabsContent value="salary" className="space-y-4 pt-2">
             <Card className="bg-card border-border transition-colors duration-200">
               <CardHeader>
-                <CardTitle className="text-base text-foreground">Monthly Compensation Package</CardTitle>
+                <CardTitle className="text-base text-foreground">Compensation Package Structure</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-1.5">
-                    <Label className="text-xs text-foreground">Basic Salary (INR)</Label>
-                    <Input
-                      type="number"
-                      value={empData.salaryStructure?.basic_salary || 0}
-                      onChange={(e) => handleSalaryChange("basic_salary", e.target.value)}
-                      className="bg-background border-border text-foreground text-sm h-10"
-                    />
+                    <Label className="text-xs text-foreground">Basic Salary (₹ / month)</Label>
+                    <Input type="number" value={empData.salaryStructure?.basic_salary ?? 0} onChange={(e) => handleSalaryChange("basic_salary", e.target.value)} className="bg-background border-border text-foreground text-sm h-10" />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-xs text-foreground">House Rent Allowance (HRA)</Label>
-                    <Input
-                      type="number"
-                      value={empData.salaryStructure?.hra || 0}
-                      onChange={(e) => handleSalaryChange("hra", e.target.value)}
-                      className="bg-background border-border text-foreground text-sm h-10"
-                    />
+                    <Label className="text-xs text-foreground">House Rent Allowance (HRA) (₹ / month)</Label>
+                    <Input type="number" value={empData.salaryStructure?.hra ?? 0} onChange={(e) => handleSalaryChange("hra", e.target.value)} className="bg-background border-border text-foreground text-sm h-10" />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-xs text-foreground">Special & Travel Allowances</Label>
-                    <Input
-                      type="number"
-                      value={empData.salaryStructure?.allowances || 0}
-                      onChange={(e) => handleSalaryChange("allowances", e.target.value)}
-                      className="bg-background border-border text-foreground text-sm h-10"
-                    />
+                    <Label className="text-xs text-foreground">Special Allowances (₹ / month)</Label>
+                    <Input type="number" value={empData.salaryStructure?.allowances ?? 0} onChange={(e) => handleSalaryChange("allowances", e.target.value)} className="bg-background border-border text-foreground text-sm h-10" />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-xs text-foreground">PF & Tax Deductions</Label>
-                    <Input
-                      type="number"
-                      value={empData.salaryStructure?.deductions || 0}
-                      onChange={(e) => handleSalaryChange("deductions", e.target.value)}
-                      className="bg-background border-border text-foreground text-sm h-10"
-                    />
+                    <Label className="text-xs text-foreground">Standard Deductions (PF/Tax) (₹ / month)</Label>
+                    <Input type="number" value={empData.salaryStructure?.deductions ?? 0} onChange={(e) => handleSalaryChange("deductions", e.target.value)} className="bg-background border-border text-foreground text-sm h-10" />
                   </div>
+                </div>
 
-                  <div className="sm:col-span-2 p-4 rounded-xl bg-purple-500/10 border border-purple-500/30 flex justify-between items-center">
-                    <div>
-                      <p className="text-xs text-purple-700 dark:text-purple-300 font-medium uppercase tracking-wider">Calculated Net Monthly Salary</p>
-                      <p className="text-2xl font-bold text-foreground mt-0.5">
-                        ₹{(empData.salaryStructure?.net_salary || 0).toLocaleString()}
-                      </p>
-                    </div>
-                    <Badge className="bg-purple-600 text-white text-xs">Direct Credit</Badge>
+                <div className="p-4 rounded-xl bg-purple-600/10 border border-purple-600/20 flex items-center justify-between mt-4">
+                  <div>
+                    <p className="text-xs font-semibold text-purple-600 dark:text-purple-400">Calculated Net Monthly Salary</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Basic + HRA + Allowances - Deductions</p>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-2xl font-bold text-foreground">₹{(empData.salaryStructure?.net_salary ?? 0).toLocaleString()}</span>
+                    <span className="text-xs text-muted-foreground block">INR / month</span>
                   </div>
                 </div>
               </CardContent>
@@ -306,11 +295,11 @@ export default function EmployeeDetailPage() {
           </TabsContent>
 
           {/* Tab 4: Documents */}
-          <TabsContent value="documents" className="space-y-4">
+          <TabsContent value="documents" className="space-y-4 pt-2">
             <Card className="bg-card border-border transition-colors duration-200">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-base text-foreground">Employee Documents</CardTitle>
-                <Button size="sm" type="button" className="bg-purple-600 hover:bg-purple-700 text-white gap-1.5 text-xs">
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle className="text-base text-foreground">Official Documents & Verification</CardTitle>
+                <Button type="button" variant="outline" size="sm" className="border-border text-foreground hover:bg-accent text-xs gap-1.5">
                   <Upload className="h-3.5 w-3.5" />
                   Upload Document
                 </Button>
@@ -336,16 +325,16 @@ export default function EmployeeDetailPage() {
               </CardContent>
             </Card>
           </TabsContent>
+        </Tabs>
 
-          {/* Global Save Button */}
-          <div className="flex justify-end pt-2">
-            <Button type="submit" disabled={saving} className="bg-purple-600 hover:bg-purple-700 text-white gap-2 font-semibold shadow-md shadow-purple-900/30">
-              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-              Save All Changes
-            </Button>
-          </div>
-        </form>
-      </Tabs>
+        {/* Global Save Button */}
+        <div className="flex justify-end pt-2">
+          <Button type="submit" disabled={saving} className="bg-purple-600 hover:bg-purple-700 text-white gap-2 font-semibold shadow-md shadow-purple-900/30 px-6 h-10">
+            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+            Save All Changes
+          </Button>
+        </div>
+      </form>
     </div>
   );
 }
