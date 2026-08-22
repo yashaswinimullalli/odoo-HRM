@@ -191,6 +191,19 @@ export const api = {
     return request<{ success: boolean; total_action_items: number; action_items: any }>("/dashboard/admin/action-items");
   },
 
+  // Analytics & Reports
+  getOverviewAnalytics: async () => {
+    return request<{ success: boolean; data: any }>("/analytics/overview");
+  },
+
+  getLeaveAnalytics: async () => {
+    return request<{ success: boolean; summary: any; leave_types: any[]; department_breakdown: any[] }>("/analytics/leaves");
+  },
+
+  getPayrollAnalytics: async () => {
+    return request<{ success: boolean; summary: any; structure_overview: any; department_distribution: any[]; monthly_trend: any[] }>("/analytics/payroll");
+  },
+
   // Attendance
   getMyAttendance: async (view = "daily") => {
     const res = await request<{ success: boolean; attendance?: any[]; data?: any[] }>(`/attendance/my?view=${view}`);
