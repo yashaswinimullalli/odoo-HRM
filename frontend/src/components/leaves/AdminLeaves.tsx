@@ -107,7 +107,6 @@ export function AdminLeaves() {
                     <TableHead className="text-muted-foreground text-xs">Employee</TableHead>
                     <TableHead className="text-muted-foreground text-xs">Type</TableHead>
                     <TableHead className="text-muted-foreground text-xs">Duration</TableHead>
-                    <TableHead className="text-muted-foreground text-xs">Reason</TableHead>
                     <TableHead className="text-muted-foreground text-xs">Status</TableHead>
                     <TableHead className="text-right text-muted-foreground text-xs">Action</TableHead>
                   </TableRow>
@@ -122,14 +121,6 @@ export function AdminLeaves() {
                       <TableCell className="text-foreground">{leave.leaveType}</TableCell>
                       <TableCell className="text-foreground whitespace-nowrap">
                         {leave.startDate} <span className="text-muted-foreground">→</span> {leave.endDate}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground max-w-[200px]">
-                        <p className="truncate text-foreground/90">{leave.remarks}</p>
-                        {leave.adminComment && (
-                          <p className="text-[11px] text-purple-600 dark:text-purple-400 mt-0.5">
-                            Note: {leave.adminComment}
-                          </p>
-                        )}
                       </TableCell>
                       <TableCell>{statusBadge(leave.status)}</TableCell>
                       <TableCell className="text-right">
@@ -153,7 +144,7 @@ export function AdminLeaves() {
                   ))}
                   {leaves.length === 0 && (
                     <TableRow className="border-border">
-                      <TableCell colSpan={6} className="text-center text-muted-foreground py-8 text-xs">
+                      <TableCell colSpan={5} className="text-center text-muted-foreground py-8 text-xs">
                         No leave requests found for this filter.
                       </TableCell>
                     </TableRow>
