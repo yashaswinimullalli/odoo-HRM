@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/lib/api";
-import { getUserById } from "@/lib/mockStore";
+import { getUserById, updateUser } from "@/lib/mockStore";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -110,28 +110,34 @@ export default function EmployeeDetailsPage() {
     e.preventDefault();
     setSaving(true);
     try {
-      const res = await fetch(`http://localhost:5000/api/employees/${empData.uid}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${sessionStorage.getItem("dayflow_auth_token") || ""}`,
-        },
-        body: JSON.stringify({
-          phone: empData.phone,
-          address: empData.address,
-          department_id: empData.department_id,
-          designation_id: empData.designation_id,
-          basic_salary: empData.salaryStructure?.basic_salary,
-          hra: empData.salaryStructure?.hra,
-          allowances: empData.salaryStructure?.allowances,
-          deductions: empData.salaryStructure?.deductions,
-          bank_account_number: empData.bank_account_number,
-          pan_number: empData.pan_number,
-        }),
+      const payload = {
+        first_name: empData.firstName || empData.fullName?.split(" ")[0] || "Employee",
+        last_name: empData.lastName || empData.fullName?.split(" ").slice(1).join(" ") || "",
+        phone: empData.phone,
+        address: empData.address,
+        employment_status: empData.employmentType || "ACTIVE",
+        basic_salary: empData.salaryStructure?.basic_salary,
+        hra: empData.salaryStructure?.hra,
+        allowances: empData.salaryStructure?.allowances,
+        deductions: empData.salaryStructure?.deductions,
+      };
+
+      await api.updateEmployee(params.id as string, payload);
+      updateUser(empData.uid || (params.id as string), {
+        fullName: `${payload.first_name} ${payload.last_name}`.trim(),
+        phone: payload.phone,
+        address: payload.address,
+        employmentType: payload.employment_status,
       });
-      toast.success("Employee profile and salary details updated successfully.");
-    } catch {
-      toast.success("Profile saved in session.");
+
+      toast.success("Employee details & salary updated and saved successfully!");
+    } catch (err: any) {
+      // Fallback
+      updateUser(empData.uid || (params.id as string), {
+        phone: empData.phone,
+        address: empData.address,
+      });
+      toast.success("Employee details updated in session.");
     } finally {
       setSaving(false);
     }

@@ -107,13 +107,6 @@ const getEmployeeById = async (req, res, next) => {
         e.joining_date,
         e.profile_picture_url,
         e.employment_status,
-        e.bank_account_number,
-        e.bank_name,
-        e.bank_ifsc_code,
-        e.pan_number,
-        e.emergency_contact_name,
-        e.emergency_contact_phone,
-        e.marital_status,
         e.created_at,
         e.updated_at,
         u.email,
@@ -135,7 +128,7 @@ const getEmployeeById = async (req, res, next) => {
       LEFT JOIN departments d ON e.department_id = d.id
       LEFT JOIN designations ds ON e.designation_id = ds.id
       LEFT JOIN salary_structures s ON e.id = s.employee_id
-      WHERE e.id = $1
+      WHERE e.id = $1 OR e.user_id = $1
     `;
     const empRes = await pool.query(empQuery, [id]);
 
@@ -149,7 +142,7 @@ const getEmployeeById = async (req, res, next) => {
        FROM documents 
        WHERE employee_id = $1 
        ORDER BY uploaded_at DESC`,
-      [id]
+      [empRes.rows[0].id]
     );
 
     const emp = empRes.rows[0];
@@ -162,7 +155,7 @@ const getEmployeeById = async (req, res, next) => {
         employee_code: emp.employee_code,
         first_name: emp.first_name,
         last_name: emp.last_name,
-        full_name: `${emp.first_name} ${emp.last_name}`,
+        full_name: `${emp.first_name} ${emp.last_name || ''}`.trim(),
         email: emp.email,
         role: emp.role,
         gender: emp.gender,
@@ -172,15 +165,10 @@ const getEmployeeById = async (req, res, next) => {
         joining_date: emp.joining_date,
         profile_picture_url: emp.profile_picture_url,
         employment_status: emp.employment_status,
-        bank_account_number: emp.bank_account_number,
-        bank_name: emp.bank_name,
-        bank_ifsc_code: emp.bank_ifsc_code,
-        pan_number: emp.pan_number,
-        emergency_contact_name: emp.emergency_contact_name,
-        emergency_contact_phone: emp.emergency_contact_phone,
-        marital_status: emp.marital_status,
         department: { id: emp.department_id, name: emp.department_name },
         designation: { id: emp.designation_id, title: emp.designation_title },
+        department_name: emp.department_name,
+        designation_title: emp.designation_title,
         salary_structure: {
           basic_salary: emp.basic_salary,
           hra: emp.hra,
@@ -208,35 +196,29 @@ const createEmployee = async (req, res, next) => {
     const {
       first_name,
       last_name,
-      name,
       email,
-      phone,
-      gender = 'PREFER_NOT_TO_SAY',
-      date_of_birth,
-      address,
+      role = 'EMPLOYEE',
       department_id,
       designation_id,
       joining_date,
-      role = 'EMPLOYEE',
-      basic_salary = 50000,
-      hra = 15000,
-      allowances = 5000,
-      deductions = 3000,
-      company_name = 'Odoo India',
+      basic_salary,
+      hra = 0,
+      allowances = 0,
+      deductions = 0,
+      gender = 'OTHER',
+      date_of_birth,
+      phone,
+      address,
+      company_name = 'Dayflow',
     } = req.body;
 
-    let fName = first_name;
-    let lName = last_name;
-    if (!fName && name) {
-      const parts = name.trim().split(/\s+/);
-      fName = parts[0];
-      lName = parts.slice(1).join(' ') || '';
-    }
+    const fName = (first_name || '').trim();
+    const lName = (last_name || '').trim();
 
-    if (!email || !fName) {
+    if (!fName || !email) {
       return res.status(400).json({
         success: false,
-        message: 'Name and Email are required to create an employee.',
+        message: 'First Name and Email are required.',
       });
     }
 
@@ -281,8 +263,8 @@ const createEmployee = async (req, res, next) => {
       [
         newUser.id,
         loginId,
-        fName.trim(),
-        (lName || '').trim(),
+        fName,
+        lName,
         gender,
         date_of_birth || null,
         phone || null,
@@ -424,13 +406,6 @@ const updateEmployeeByAdmin = async (req, res, next) => {
       hra,
       allowances,
       deductions,
-      bank_account_number,
-      bank_name,
-      bank_ifsc_code,
-      pan_number,
-      emergency_contact_name,
-      emergency_contact_phone,
-      marital_status,
     } = req.body;
 
     await client.query('BEGIN');
@@ -449,15 +424,8 @@ const updateEmployeeByAdmin = async (req, res, next) => {
         joining_date = COALESCE($9, joining_date),
         profile_picture_url = COALESCE($10, profile_picture_url),
         employment_status = COALESCE($11, employment_status),
-        bank_account_number = COALESCE($12, bank_account_number),
-        bank_name = COALESCE($13, bank_name),
-        bank_ifsc_code = COALESCE($14, bank_ifsc_code),
-        pan_number = COALESCE($15, pan_number),
-        emergency_contact_name = COALESCE($16, emergency_contact_name),
-        emergency_contact_phone = COALESCE($17, emergency_contact_phone),
-        marital_status = COALESCE($18, marital_status),
         updated_at = CURRENT_TIMESTAMP
-      WHERE id = $19
+      WHERE id = $12 OR user_id = $12
       RETURNING *
     `;
     const empRes = await client.query(updateEmpQuery, [
@@ -472,13 +440,6 @@ const updateEmployeeByAdmin = async (req, res, next) => {
       joining_date,
       profile_picture_url,
       employment_status,
-      bank_account_number,
-      bank_name,
-      bank_ifsc_code,
-      pan_number,
-      emergency_contact_name,
-      emergency_contact_phone,
-      marital_status,
       id,
     ]);
 
@@ -486,6 +447,8 @@ const updateEmployeeByAdmin = async (req, res, next) => {
       await client.query('ROLLBACK');
       return res.status(404).json({ success: false, message: 'Employee not found.' });
     }
+
+    const updatedEmp = empRes.rows[0];
 
     // Update salary structure if salary numbers provided
     if (basic_salary !== undefined) {
@@ -496,14 +459,6 @@ const updateEmployeeByAdmin = async (req, res, next) => {
       const net = basic + h + allow - ded;
 
       await client.query(
-        `INSERT INTO salary_structures (employee_id, basic_salary, hra, allowances, deductions, net_salary)
-         VALUES ($1, $2, $3, $4, $5, $6)
-         ON CONFLICT (employee_id) DO UPDATE 
-         SET basic_salary = EXCLUDED.basic_salary,
-             hra = EXCLUDED.hra,
-             allowances = EXCLUDED.allowances,
-             deductions = EXCLUDED.deductions,
-             net_salary = EXCLUDED.net_salary,
              updated_at = CURRENT_TIMESTAMP`,
         [id, basic, h, allow, ded, net]
       );

@@ -339,18 +339,42 @@ export const api = {
     return {
       uid: String(e.id),
       fullName: `${e.first_name} ${e.last_name || ""}`.trim(),
+      firstName: e.first_name || "",
+      lastName: e.last_name || "",
       employeeId: e.employee_code,
       email: e.email,
       role: (e.user_role || e.role)?.toLowerCase() === "admin" ? "admin" : "employee",
-      department: e.department_name || "General",
-      designation: e.designation_title || "Specialist",
+      department: e.department_name || e.department?.name || "Engineering",
+      designation: e.designation_title || e.designation?.title || "Specialist",
+      department_id: e.department_id || e.department?.id,
+      designation_id: e.designation_id || e.designation?.id,
       joiningDate: e.joining_date ? (typeof e.joining_date === "string" ? e.joining_date.split("T")[0] : new Date(e.joining_date).toISOString().split("T")[0]) : "",
       phone: e.phone_number || e.phone || "",
       address: e.current_address || e.address || "",
-      employmentType: e.employment_status || "Full-time",
-      salaryStructure: e.salary_structure,
+      employmentType: e.employment_status || "ACTIVE",
+      salaryStructure: e.salary_structure || {
+        basic_salary: 60000,
+        hra: 20000,
+        allowances: 10000,
+        deductions: 5000,
+        net_salary: 85000,
+      },
       documents: e.documents || [],
       emailVerified: true,
     };
+  },
+
+  createEmployee: async (data: any) => {
+    return request<{ success: boolean; message: string; employee?: any; credentials?: any }>("/employees", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  },
+
+  updateEmployee: async (id: string, data: any) => {
+    return request<{ success: boolean; message: string; employee?: any }>(`/employees/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
   },
 };

@@ -78,25 +78,16 @@ export default function EmployeesPage() {
 
     setLoading(true);
     try {
-      // Call backend employee creation endpoint which auto-generates Login ID & temp password
-      const res = await fetch("http://localhost:5000/api/employees", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${sessionStorage.getItem("dayflow_auth_token") || ""}`,
-        },
-        body: JSON.stringify({
-          first_name: formData.firstName.trim(),
-          last_name: formData.lastName.trim(),
-          email: formData.email.trim(),
-          phone: formData.phone.trim(),
-          joining_date: formData.joiningDate,
-          basic_salary: parseFloat(formData.basicSalary) || 50000,
-          company_name: "Odoo India",
-        }),
+      const data = await api.createEmployee({
+        first_name: formData.firstName.trim(),
+        last_name: formData.lastName.trim(),
+        email: formData.email.trim(),
+        phone: formData.phone.trim(),
+        joining_date: formData.joiningDate,
+        basic_salary: parseFloat(formData.basicSalary) || 50000,
+        company_name: "Dayflow",
       });
 
-      const data = await res.json();
       if (data.success && data.credentials) {
         setCreatedCredentials({
           login_id: data.credentials.login_id,
