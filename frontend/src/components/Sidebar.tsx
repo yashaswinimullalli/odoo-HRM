@@ -47,10 +47,12 @@ export function Sidebar() {
   const links = profile?.role === "admin" ? adminLinks : employeeLinks;
 
   return (
-    <div className="flex h-full w-64 flex-col bg-zinc-950 border-r border-zinc-800 text-zinc-300">
-      <div className="flex h-16 items-center px-5 border-b border-zinc-800 gap-3">
-        <img src="/logo.png" alt="Dayflow Logo" className="h-9 w-9 object-contain drop-shadow" />
-        <h1 className="text-xl font-bold text-white tracking-tight">
+    <div className="flex h-full w-64 flex-col bg-card border-r border-border text-foreground transition-colors duration-200">
+      <div className="flex h-16 items-center px-5 border-b border-border gap-3">
+        <div className="h-9 w-9 rounded-lg bg-gradient-to-tr from-purple-600 to-pink-500 flex items-center justify-center text-white font-black text-lg shadow-md shadow-purple-500/20">
+          D
+        </div>
+        <h1 className="text-xl font-bold text-foreground tracking-tight">
           Day<span className="text-purple-500">flow</span>
         </h1>
       </div>
@@ -67,27 +69,27 @@ export function Sidebar() {
               key={link.name}
               href={link.href}
               className={cn(
-                "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150",
                 isActive
-                  ? "bg-purple-600/10 text-purple-400 border border-purple-600/20"
-                  : "hover:bg-zinc-900 hover:text-white"
+                  ? "bg-purple-600/15 text-purple-600 dark:text-purple-400 font-semibold border border-purple-500/20 shadow-sm"
+                  : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
               )}
             >
-              <Icon className="h-4 w-4" />
+              <Icon className={cn("h-4 w-4", isActive ? "text-purple-600 dark:text-purple-400" : "text-muted-foreground")} />
               {link.name}
             </Link>
           );
         })}
       </div>
 
-      <div className="p-4 border-t border-zinc-800 space-y-1">
+      <div className="p-4 border-t border-border space-y-1">
         <Link
           href="/dashboard/notifications"
           className={cn(
-            "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+            "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
             pathname === "/dashboard/notifications"
-              ? "bg-purple-600/10 text-purple-400 border border-purple-600/20"
-              : "hover:bg-zinc-900 hover:text-white"
+              ? "bg-purple-600/15 text-purple-600 dark:text-purple-400 font-semibold border border-purple-500/20"
+              : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
           )}
         >
           <Bell className="h-4 w-4" />
@@ -95,7 +97,7 @@ export function Sidebar() {
         </Link>
         <button
           onClick={handleLogout}
-          className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-zinc-900 hover:text-red-400"
+          className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
         >
           <LogOut className="h-4 w-4" />
           Logout
