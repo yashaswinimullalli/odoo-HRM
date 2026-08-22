@@ -7,14 +7,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-} from "@/components/ui/card";
 import { toast } from "sonner";
-import { Eye, EyeOff, Loader2, Upload, Building2, CheckCircle2 } from "lucide-react";
+import { Eye, EyeOff, Loader2, Upload, CheckCircle2 } from "lucide-react";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -84,188 +78,303 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="flex min-h-screen w-full items-center justify-center bg-zinc-950 p-4 py-10">
-      <div className="w-full max-w-lg space-y-5">
-        {/* App / Web Logo Container */}
-        <div className="text-center">
-          <div className="inline-flex items-center justify-center p-2.5 rounded-2xl bg-purple-600/10 border border-purple-500/20 mb-3 shadow-lg shadow-purple-900/20">
-            <img src="/logo.png" alt="Dayflow Logo" className="h-12 w-12 object-contain" />
-          </div>
-          <h1 className="text-3xl font-bold text-white tracking-tight">
-            Day<span className="text-purple-500">flow</span> <span className="text-sm font-normal text-zinc-400 bg-zinc-900 px-2 py-0.5 rounded-full border border-zinc-800 ml-1">HRMS</span>
-          </h1>
-          <p className="text-zinc-400 text-xs mt-1">Human Resource Management System</p>
-        </div>
-
-        {/* Sign Up Card */}
-        <Card className="bg-zinc-900 border-zinc-800 text-zinc-100 shadow-xl">
-          <CardHeader className="text-center pb-3">
-            <h2 className="text-xl font-bold text-white">Sign Up</h2>
-            <p className="text-xs text-zinc-400">Register your organization & create admin account</p>
-          </CardHeader>
-          <form onSubmit={handleRegister}>
-            <CardContent className="space-y-4 pt-1">
-              {/* Company Name + Upload Logo */}
-              <div className="space-y-2">
-                <Label htmlFor="companyName" className="text-zinc-300 font-medium text-sm">
-                  Company Name :-
-                </Label>
-                <div className="flex items-center gap-2">
-                  <Input
-                    id="companyName"
-                    required
-                    placeholder="e.g. Odoo India Pvt Ltd"
-                    value={formData.companyName}
-                    onChange={handleChange}
-                    className="bg-zinc-950 border-zinc-800 text-white placeholder:text-zinc-600 focus-visible:ring-purple-600 h-10 flex-1"
-                  />
-                  <label
-                    htmlFor="logo-upload"
-                    className="cursor-pointer inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-md bg-purple-600/15 border border-purple-500/30 text-purple-300 hover:bg-purple-600/25 hover:border-purple-500/50 text-xs font-medium transition-colors whitespace-nowrap h-10"
-                    title="Upload Company Logo"
-                  >
-                    <Upload className="h-4 w-4" />
-                    {logoName ? "Logo Attached" : "Upload Logo"}
-                  </label>
-                  <input
-                    id="logo-upload"
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleLogoUpload}
-                  />
-                </div>
-                {logoName && (
-                  <p className="text-[11px] text-green-400 flex items-center gap-1 mt-1">
-                    <CheckCircle2 className="h-3 w-3" /> {logoName}
-                  </p>
-                )}
-              </div>
-
-              {/* Name Field */}
-              <div className="space-y-2">
-                <Label htmlFor="name" className="text-zinc-300 font-medium text-sm">
-                  Name :-
-                </Label>
-                <Input
-                  id="name"
-                  required
-                  placeholder="e.g. John Doe"
-                  value={formData.name}
-                  onChange={handleChange}
-                  className="bg-zinc-950 border-zinc-800 text-white placeholder:text-zinc-600 focus-visible:ring-purple-600 h-10"
-                />
-              </div>
-
-              {/* Email Field */}
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-zinc-300 font-medium text-sm">
-                  Email :-
-                </Label>
-                <Input
-                  id="email"
-                  type="email"
-                  required
-                  placeholder="admin@company.com"
-                  value={formData.email}
-                  onChange={handleChange}
-                  className="bg-zinc-950 border-zinc-800 text-white placeholder:text-zinc-600 focus-visible:ring-purple-600 h-10"
-                />
-              </div>
-
-              {/* Phone Field */}
-              <div className="space-y-2">
-                <Label htmlFor="phone" className="text-zinc-300 font-medium text-sm">
-                  Phone :-
-                </Label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  placeholder="+91 98765 43210"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  className="bg-zinc-950 border-zinc-800 text-white placeholder:text-zinc-600 focus-visible:ring-purple-600 h-10"
-                />
-              </div>
-
-              {/* Password Field */}
-              <div className="space-y-2">
-                <Label htmlFor="password" className="text-zinc-300 font-medium text-sm">
-                  Password :-
-                </Label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    required
-                    minLength={6}
-                    placeholder="••••••••"
-                    value={formData.password}
-                    onChange={handleChange}
-                    className="bg-zinc-950 border-zinc-800 text-white placeholder:text-zinc-600 focus-visible:ring-purple-600 pr-10 h-10"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 p-1"
-                  >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
-              </div>
-
-              {/* Confirm Password Field */}
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword" className="text-zinc-300 font-medium text-sm">
-                  Confirm Password :-
-                </Label>
-                <div className="relative">
-                  <Input
-                    id="confirmPassword"
-                    type={showConfirmPassword ? "text" : "password"}
-                    required
-                    minLength={6}
-                    placeholder="••••••••"
-                    value={formData.confirmPassword}
-                    onChange={handleChange}
-                    className="bg-zinc-950 border-zinc-800 text-white placeholder:text-zinc-600 focus-visible:ring-purple-600 pr-10 h-10"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 p-1"
-                  >
-                    {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
-              </div>
-            </CardContent>
-
-            <CardFooter className="flex flex-col space-y-4 pt-2">
-              {/* Sign Up Button */}
-              <Button
-                type="submit"
-                className="w-full bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-700 hover:to-fuchsia-700 text-white font-semibold h-11 text-sm tracking-wide transition-all shadow-md shadow-purple-900/30"
-                disabled={loading}
-              >
-                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Sign Up
-              </Button>
-
-              {/* Already have an account ? Sign In */}
-              <div className="text-center text-sm text-zinc-400">
-                Already have an account ?{" "}
-                <Link
-                  href="/login"
-                  className="text-purple-400 hover:text-purple-300 font-medium underline underline-offset-4"
-                >
-                  Sign In
-                </Link>
-              </div>
-            </CardFooter>
-          </form>
-        </Card>
+    <main className="relative min-h-screen w-full flex flex-col items-center justify-center bg-black text-zinc-100 selection:bg-purple-600 selection:text-white overflow-hidden">
+      {/* ─── Full-Bleed Video Background ──────────────────────────────── */}
+      <div className="fixed inset-0 w-full h-full overflow-hidden bg-black pointer-events-none" style={{ zIndex: 0 }}>
+        <video
+          className="absolute inset-0 w-full h-full object-cover"
+          style={{ opacity: 0.45 }}
+          autoPlay
+          muted
+          loop
+          playsInline
+        >
+          <source
+            src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260809_012548_ef22562c-c0ae-4816-ad9d-f8922af4e6a7.mp4"
+            type="video/mp4"
+          />
+        </video>
+        {/* Dark overlay for readability */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-black/80" />
       </div>
-    </div>
+
+      {/* ─── Main Content ─────────────────────────────────────────────── */}
+      <div className="relative w-full max-w-[460px] mx-auto px-4 py-8" style={{ zIndex: 1 }}>
+        {/* ─── Header / Branding ─────────────────────────────────────── */}
+        <header
+          className="text-center mb-6"
+          style={{
+            animation: "fadeSlideIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) both",
+          }}
+        >
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <h1 className="text-3xl font-bold tracking-tight dayflow-title">
+              <span className="dayflow-shimmer">Day</span>
+              <span className="dayflow-shimmer-accent">flow</span>
+            </h1>
+            <span className="text-[10px] font-semibold tracking-wider text-amber-300/80 bg-amber-950/40 border border-amber-700/40 px-2 py-0.5 rounded-md">
+              HRMS
+            </span>
+          </div>
+          <p className="text-xs text-zinc-400 mt-1 font-normal">
+            Human Resource Management System
+          </p>
+        </header>
+
+        {/* ─── Sign Up Card ──────────────────────────────────────────── */}
+        <section
+          className="rounded-2xl bg-zinc-900/80 border border-zinc-800/60 p-7 sm:p-8 shadow-2xl backdrop-blur-md"
+          style={{
+            animation: "fadeSlideUp 0.85s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both",
+          }}
+        >
+          <div className="mb-5">
+            <h2 className="text-lg font-semibold text-white">Create your account</h2>
+            <p className="text-xs text-zinc-400 mt-1">
+              Register your organization &amp; create admin access
+            </p>
+          </div>
+
+          <form onSubmit={handleRegister} className="space-y-4">
+            {/* Company Name + Upload Logo */}
+            <div className="space-y-1.5">
+              <Label htmlFor="companyName" className="text-xs font-medium text-zinc-300 block">
+                Company Name
+              </Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  id="companyName"
+                  required
+                  placeholder="e.g. Odoo India Pvt Ltd"
+                  value={formData.companyName}
+                  onChange={handleChange}
+                  className="h-10 rounded-lg bg-zinc-950/80 border-zinc-800 px-3.5 text-sm text-white placeholder:text-zinc-500 focus-visible:border-purple-500 focus-visible:ring-1 focus-visible:ring-purple-500 transition-colors flex-1"
+                />
+                <label
+                  htmlFor="logo-upload"
+                  className="cursor-pointer inline-flex items-center justify-center gap-1.5 px-3 h-10 rounded-lg bg-purple-600/15 border border-purple-500/30 text-purple-300 hover:bg-purple-600/25 hover:border-purple-500/50 text-xs font-medium transition-colors whitespace-nowrap"
+                  title="Upload Company Logo"
+                >
+                  <Upload className="h-3.5 w-3.5" />
+                  {logoName ? "Attached" : "Logo"}
+                </label>
+                <input
+                  id="logo-upload"
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleLogoUpload}
+                />
+              </div>
+              {logoName && (
+                <p className="text-[11px] text-green-400 flex items-center gap-1 mt-0.5">
+                  <CheckCircle2 className="h-3 w-3" /> {logoName}
+                </p>
+              )}
+            </div>
+
+            {/* Name */}
+            <div className="space-y-1.5">
+              <Label htmlFor="name" className="text-xs font-medium text-zinc-300 block">
+                Full Name
+              </Label>
+              <Input
+                id="name"
+                required
+                placeholder="e.g. John Doe"
+                value={formData.name}
+                onChange={handleChange}
+                className="h-10 rounded-lg bg-zinc-950/80 border-zinc-800 px-3.5 text-sm text-white placeholder:text-zinc-500 focus-visible:border-purple-500 focus-visible:ring-1 focus-visible:ring-purple-500 transition-colors"
+              />
+            </div>
+
+            {/* Email */}
+            <div className="space-y-1.5">
+              <Label htmlFor="email" className="text-xs font-medium text-zinc-300 block">
+                Email
+              </Label>
+              <Input
+                id="email"
+                type="email"
+                required
+                placeholder="admin@company.com"
+                value={formData.email}
+                onChange={handleChange}
+                className="h-10 rounded-lg bg-zinc-950/80 border-zinc-800 px-3.5 text-sm text-white placeholder:text-zinc-500 focus-visible:border-purple-500 focus-visible:ring-1 focus-visible:ring-purple-500 transition-colors"
+              />
+            </div>
+
+            {/* Phone */}
+            <div className="space-y-1.5">
+              <Label htmlFor="phone" className="text-xs font-medium text-zinc-300 block">
+                Phone
+              </Label>
+              <Input
+                id="phone"
+                type="tel"
+                placeholder="+91 98765 43210"
+                value={formData.phone}
+                onChange={handleChange}
+                className="h-10 rounded-lg bg-zinc-950/80 border-zinc-800 px-3.5 text-sm text-white placeholder:text-zinc-500 focus-visible:border-purple-500 focus-visible:ring-1 focus-visible:ring-purple-500 transition-colors"
+              />
+            </div>
+
+            {/* Password */}
+            <div className="space-y-1.5">
+              <Label htmlFor="password" className="text-xs font-medium text-zinc-300 block">
+                Password
+              </Label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  required
+                  minLength={6}
+                  placeholder="••••••••"
+                  value={formData.password}
+                  onChange={handleChange}
+                  className="h-10 rounded-lg bg-zinc-950/80 border-zinc-800 pl-3.5 pr-11 text-sm text-white placeholder:text-zinc-500 focus-visible:border-purple-500 focus-visible:ring-1 focus-visible:ring-purple-500 transition-colors"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-200 transition-colors p-1"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+
+            {/* Confirm Password */}
+            <div className="space-y-1.5">
+              <Label htmlFor="confirmPassword" className="text-xs font-medium text-zinc-300 block">
+                Confirm Password
+              </Label>
+              <div className="relative">
+                <Input
+                  id="confirmPassword"
+                  type={showConfirmPassword ? "text" : "password"}
+                  required
+                  minLength={6}
+                  placeholder="••••••••"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  className="h-10 rounded-lg bg-zinc-950/80 border-zinc-800 pl-3.5 pr-11 text-sm text-white placeholder:text-zinc-500 focus-visible:border-purple-500 focus-visible:ring-1 focus-visible:ring-purple-500 transition-colors"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-200 transition-colors p-1"
+                  aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                >
+                  {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+
+            {/* Create Account Button */}
+            <Button
+              type="submit"
+              disabled={loading}
+              className="w-full h-11 mt-2 rounded-lg bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 hover:from-amber-400 hover:via-orange-400 hover:to-rose-400 text-white font-semibold text-sm transition-all shadow-lg shadow-amber-900/40 hover:-translate-y-px"
+            >
+              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Create Account
+            </Button>
+
+            {/* Sign In Link */}
+            <div className="pt-1 text-center text-xs text-zinc-400">
+              Already have an account?{" "}
+              <Link
+                href="/login"
+                className="text-amber-400 hover:text-amber-300 font-medium ml-1 transition-colors"
+              >
+                Sign in
+              </Link>
+            </div>
+          </form>
+        </section>
+      </div>
+
+      {/* ─── Entrance Animations ──────────────────────────────────────── */}
+      <style jsx global>{`
+        @keyframes fadeSlideIn {
+          from {
+            opacity: 0;
+            transform: translateY(-14px);
+            filter: blur(4px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+            filter: blur(0);
+          }
+        }
+        @keyframes fadeSlideUp {
+          from {
+            opacity: 0;
+            transform: translateY(18px) scale(0.98);
+            filter: blur(6px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            filter: blur(0);
+          }
+        }
+        @keyframes shimmer {
+          0% {
+            background-position: -200% center;
+          }
+          100% {
+            background-position: 200% center;
+          }
+        }
+        .dayflow-shimmer {
+          background: linear-gradient(
+            90deg,
+            #ffffff 0%,
+            #e2c6ff 25%,
+            #ffffff 50%,
+            #ffd6a0 75%,
+            #ffffff 100%
+          );
+          background-size: 200% auto;
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+          animation: shimmer 3s ease-in-out infinite;
+        }
+        .dayflow-shimmer-accent {
+          background: linear-gradient(
+            90deg,
+            #f59e0b 0%,
+            #f97316 25%,
+            #fbbf24 50%,
+            #f97316 75%,
+            #f59e0b 100%
+          );
+          background-size: 200% auto;
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+          animation: shimmer 3s ease-in-out infinite;
+          animation-delay: 0.5s;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          * {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+          }
+          .dayflow-shimmer {
+            -webkit-text-fill-color: #ffffff;
+          }
+          .dayflow-shimmer-accent {
+            -webkit-text-fill-color: #f59e0b;
+          }
+        }
+      `}</style>
+    </main>
   );
 }
