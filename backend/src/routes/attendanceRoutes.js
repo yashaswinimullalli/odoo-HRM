@@ -15,6 +15,7 @@ router.post('/check-out', authenticateToken, checkOut);
 router.get('/my', authenticateToken, getMyAttendance);
 
 // Admin / HR attendance management
+router.get('/', authenticateToken, authorizeRoles('ADMIN', 'HR'), getAllAttendance);
 router.get('/all', authenticateToken, authorizeRoles('ADMIN', 'HR'), getAllAttendance);
 router.put('/:id', authenticateToken, authorizeRoles('ADMIN', 'HR'), regularizeAttendance);
 
