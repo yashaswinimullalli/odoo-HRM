@@ -38,8 +38,24 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
     headers["Authorization"] = `Bearer ${token}`;
   }
 
-  const url = `${API_BASE_URL}${endpoint}`;
-  const response = await fetch(url, { ...options, headers });
+  const primaryUrl = `${API_BASE_URL}${endpoint}`;
+  let response: Response;
+
+  try {
+    response = await fetch(primaryUrl, { ...options, headers });
+  } catch (netErr: any) {
+    // Automatic fallback for Windows when localhost (::1) is not bound
+    if (primaryUrl.includes("localhost")) {
+      const fallbackUrl = primaryUrl.replace("localhost", "127.0.0.1");
+      try {
+        response = await fetch(fallbackUrl, { ...options, headers });
+      } catch {
+        throw new Error("Unable to connect to the backend server. Please verify port 5000 is running.");
+      }
+    } else {
+      throw netErr;
+    }
+  }
 
   if (!response.ok) {
     let errorMsg = `HTTP Error ${response.status}`;

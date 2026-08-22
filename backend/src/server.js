@@ -57,9 +57,9 @@ app.use(errorHandler);
 
 // Start Server
 if (process.env.NODE_ENV !== 'test') {
-  app.listen(PORT, '0.0.0.0', () => {
+  app.listen(PORT, () => {
     console.log(`\n======================================================`);
-    console.log(`🚀 Dayflow HRMS Backend running on port ${PORT}`);
+    console.log(`🚀 Dayflow HRMS Backend running on port ${PORT} (IPv4/IPv6 dual-stack)`);
     console.log(`📋 Healthcheck: http://localhost:${PORT}/api/health`);
     console.log(`======================================================\n`);
   });
