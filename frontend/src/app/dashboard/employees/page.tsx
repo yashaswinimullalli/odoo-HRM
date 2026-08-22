@@ -50,7 +50,7 @@ export default function EmployeesPage() {
     try {
       const live = await api.getEmployees();
       if (live && live.length > 0) {
-        setEmployees(live);
+        setEmployees(live as UserProfile[]);
         return;
       }
     } catch (e) {
@@ -157,12 +157,14 @@ export default function EmployeesPage() {
 
           {/* Add Employee Dialog */}
           <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-purple-600 hover:bg-purple-700 text-white gap-2 text-sm shadow-md shadow-purple-900/20">
-                <UserPlus className="h-4 w-4" />
-                Add Employee
-              </Button>
-            </DialogTrigger>
+            <DialogTrigger
+              render={
+                <Button className="bg-purple-600 hover:bg-purple-700 text-white gap-2 text-sm shadow-md shadow-purple-900/20">
+                  <UserPlus className="h-4 w-4" />
+                  Add Employee
+                </Button>
+              }
+            />
             <DialogContent className="bg-zinc-900 border-zinc-800 text-zinc-100 max-w-lg">
               <DialogHeader>
                 <DialogTitle className="text-lg font-bold text-white">Add New Employee</DialogTitle>

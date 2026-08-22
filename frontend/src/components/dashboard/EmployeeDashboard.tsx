@@ -28,6 +28,7 @@ export function EmployeeDashboard() {
 
   useEffect(() => {
     if (!profile) return;
+    const currentProfile = profile;
 
     async function loadData() {
       try {
@@ -37,9 +38,9 @@ export function EmployeeDashboard() {
           if (d.today_attendance && d.today_attendance.status !== "NOT_CHECKED_IN") {
             setTodayRecord({
               id: String(d.today_attendance.id),
-              userId: profile.uid,
-              employeeId: profile.employeeId,
-              employeeName: profile.fullName,
+              userId: currentProfile.uid,
+              employeeId: currentProfile.employeeId,
+              employeeName: currentProfile.fullName,
               date: d.today_attendance.date,
               checkInTime: d.today_attendance.check_in ? d.today_attendance.check_in.substring(11, 16) : null,
               checkOutTime: d.today_attendance.check_out ? d.today_attendance.check_out.substring(11, 16) : null,
@@ -65,11 +66,11 @@ export function EmployeeDashboard() {
       }
 
       // Fallback
-      const att = getTodayAttendance(profile.uid);
+      const att = getTodayAttendance(currentProfile.uid);
       setTodayRecord(att ?? null);
-      const leaves = getLeavesByUser(profile.uid);
+      const leaves = getLeavesByUser(currentProfile.uid);
       setPendingLeaves(leaves.filter((l) => l.status === "Pending").length);
-      const pay = getPayrollByUser(profile.uid);
+      const pay = getPayrollByUser(currentProfile.uid);
       setLatestSalary(pay[0] ?? null);
     }
 

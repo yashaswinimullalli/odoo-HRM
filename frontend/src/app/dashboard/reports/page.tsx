@@ -155,7 +155,7 @@ export default function ReportsPage() {
               <YAxis tick={{ fill: "#71717a", fontSize: 11 }} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
               <Tooltip
                 {...chartTooltipStyle}
-                formatter={(v: number) => [`$${v.toLocaleString()}`, "Total Payroll"]}
+                formatter={(v: any) => [`$${Number(v || 0).toLocaleString()}`, "Total Payroll"]}
               />
               <Bar dataKey="total" fill="#7c3aed" radius={[4, 4, 0, 0]} />
             </BarChart>
