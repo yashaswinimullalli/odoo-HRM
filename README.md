@@ -268,11 +268,6 @@ The database is built on relational PostgreSQL tables:
 5. Configure Environment Variables (`DATABASE_URL`, `JWT_SECRET`, `NODE_ENV=production`, `PORT=5000`).
 6. Run migrations & seed data using the Render shell or connected PostgreSQL database.
 
----
 
-## 📄 License & Attribution
 
-This project is developed as an open-source Human Resource Management System (HRMS) solution.
 
-Developed by [Yashaswini Mullalli](https://github.com/yashaswinimullalli).  
-Feedback and pull requests are welcome!
