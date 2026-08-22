@@ -56,7 +56,7 @@ export default function ProfilePage() {
             <Avatar className="h-28 w-28 border-4 border-zinc-800">
               <AvatarImage src={profile.profilePicture} />
               <AvatarFallback className="bg-zinc-800 text-3xl text-white">
-                {profile.fullName.substring(0, 2).toUpperCase()}
+                {(profile.fullName || "User").substring(0, 2).toUpperCase()}
               </AvatarFallback>
             </Avatar>
             <div>
