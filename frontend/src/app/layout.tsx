@@ -9,6 +9,9 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "Dayflow HRMS",
   description: "Every workday, perfectly aligned.",
+  icons: {
+    icon: "/logo.png",
+  },
 };
 
 export default function RootLayout({

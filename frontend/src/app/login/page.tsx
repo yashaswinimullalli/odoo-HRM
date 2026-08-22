@@ -52,8 +52,8 @@ export default function LoginPage() {
       <div className="w-full max-w-md space-y-5">
         {/* App / Web Logo Container */}
         <div className="text-center">
-          <div className="inline-flex items-center justify-center p-3 rounded-2xl bg-purple-600/10 border border-purple-500/20 mb-3 shadow-lg shadow-purple-900/20">
-            <Building2 className="h-8 w-8 text-purple-400" />
+          <div className="inline-flex items-center justify-center p-2.5 rounded-2xl bg-purple-600/10 border border-purple-500/20 mb-3 shadow-lg shadow-purple-900/20">
+            <img src="/logo.png" alt="Dayflow Logo" className="h-12 w-12 object-contain" />
           </div>
           <h1 className="text-3xl font-bold text-white tracking-tight">
             Day<span className="text-purple-500">flow</span> <span className="text-sm font-normal text-zinc-400 bg-zinc-900 px-2 py-0.5 rounded-full border border-zinc-800 ml-1">HRMS</span>

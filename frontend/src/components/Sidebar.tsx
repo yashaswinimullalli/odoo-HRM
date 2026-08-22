@@ -48,7 +48,8 @@ export function Sidebar() {
 
   return (
     <div className="flex h-full w-64 flex-col bg-zinc-950 border-r border-zinc-800 text-zinc-300">
-      <div className="flex h-16 items-center px-6 border-b border-zinc-800">
+      <div className="flex h-16 items-center px-5 border-b border-zinc-800 gap-3">
+        <img src="/logo.png" alt="Dayflow Logo" className="h-9 w-9 object-contain drop-shadow" />
         <h1 className="text-xl font-bold text-white tracking-tight">
           Day<span className="text-purple-500">flow</span>
         </h1>
