@@ -56,11 +56,12 @@ const authenticateToken = async (req, res, next) => {
 };
 
 const authorizeRoles = (...roles) => {
+  const flattenedRoles = roles.flat();
   return (req, res, next) => {
-    if (!req.user || !roles.includes(req.user.role)) {
+    if (!req.user || !flattenedRoles.includes(req.user.role)) {
       return res.status(403).json({
         success: false,
-        message: `Forbidden. This action requires one of the following roles: ${roles.join(', ')}`,
+        message: `Forbidden. This action requires one of the following roles: ${flattenedRoles.join(', ')}`,
       });
     }
     next();
@@ -70,4 +71,6 @@ const authorizeRoles = (...roles) => {
 module.exports = {
   authenticateToken,
   authorizeRoles,
+  authenticate: authenticateToken,
+  authorizeRole: authorizeRoles,
 };

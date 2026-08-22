@@ -1,6 +1,7 @@
 const { pool } = require('../config/db');
 const { logAudit } = require('../utils/auditLogger');
 const { sendNotification } = require('../utils/notifier');
+const { getSalaryCreditedEmailTemplate } = require('../services/emailService');
 
 /**
  * Employee view own monthly payroll history (READ-ONLY)
@@ -207,12 +208,15 @@ const updateSalaryStructure = async (req, res, next) => {
     const result = await pool.query(query, [employeeId, basic, h, allow, ded, net, currency]);
 
     // Fetch user_id for notification
-    const empRes = await pool.query('SELECT user_id, employee_code FROM employees WHERE id = $1', [employeeId]);
+    const empRes = await pool.query('SELECT user_id, employee_code, first_name, last_name FROM employees WHERE id = $1', [employeeId]);
     if (empRes.rows.length > 0) {
       await sendNotification({
         userId: empRes.rows[0].user_id,
         title: 'Salary Structure Updated',
         message: `Your monthly compensation package has been updated by Admin. Net Salary: INR ${net.toLocaleString()}.`,
+        notificationType: 'PAYROLL_UPDATED',
+        relatedEntityType: 'PAYROLL',
+        relatedEntityId: employeeId,
       });
     }
 
@@ -335,12 +339,28 @@ const updatePayrollStatus = async (req, res, next) => {
 
     // Notify employee if marked as PAID
     if (payment_status.toUpperCase() === 'PAID') {
-      const empRes = await pool.query('SELECT user_id FROM employees WHERE id = $1', [record.employee_id]);
+      const empRes = await pool.query(
+        'SELECT user_id, first_name, last_name FROM employees WHERE id = $1',
+        [record.employee_id]
+      );
       if (empRes.rows.length > 0) {
+        const emp = empRes.rows[0];
+        const empName = `${emp.first_name || ''} ${emp.last_name || ''}`.trim();
+        const emailHtml = getSalaryCreditedEmailTemplate({
+          employeeName: empName,
+          month: record.month,
+          year: record.year,
+          netSalary: record.net_salary,
+        });
+
         await sendNotification({
-          userId: empRes.rows[0].user_id,
+          userId: emp.user_id,
           title: 'Salary Credited',
           message: `Your salary for ${record.month}/${record.year} of INR ${parseFloat(record.net_salary).toLocaleString()} has been credited.`,
+          notificationType: 'PAYROLL_UPDATED',
+          relatedEntityType: 'PAYROLL',
+          relatedEntityId: record.id,
+          emailHtml,
         });
       }
     }

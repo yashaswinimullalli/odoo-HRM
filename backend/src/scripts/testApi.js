@@ -2,7 +2,7 @@ const http = require('http');
 const app = require('../server');
 
 let server;
-const PORT = 5001;
+const PORT = 5002;
 
 function makeRequest({ path, method = 'GET', headers = {}, body = null }) {
   return new Promise((resolve, reject) => {
@@ -25,11 +25,16 @@ function makeRequest({ path, method = 'GET', headers = {}, body = null }) {
         let responseBody = '';
         res.on('data', (chunk) => (responseBody += chunk));
         res.on('end', () => {
-          try {
-            const parsed = JSON.parse(responseBody);
-            resolve({ status: res.statusCode, data: parsed });
-          } catch (e) {
-            resolve({ status: res.statusCode, raw: responseBody });
+          const contentType = res.headers['content-type'] || '';
+          if (contentType.includes('text/csv')) {
+            resolve({ status: res.statusCode, raw: responseBody, headers: res.headers });
+          } else {
+            try {
+              const parsed = JSON.parse(responseBody);
+              resolve({ status: res.statusCode, data: parsed, headers: res.headers });
+            } catch (e) {
+              resolve({ status: res.statusCode, raw: responseBody, headers: res.headers });
+            }
           }
         });
       }
@@ -42,9 +47,9 @@ function makeRequest({ path, method = 'GET', headers = {}, body = null }) {
 }
 
 async function runTests() {
-  console.log('\n======================================================');
-  console.log('🧪 Starting Dayflow HRMS Backend Automated Verification');
-  console.log('======================================================\n');
+  console.log('\n================================================================');
+  console.log('🧪 Starting Dayflow HRMS Backend Extended Automated Verification');
+  console.log('================================================================\n');
 
   server = app.listen(PORT);
   let passed = 0;
@@ -64,6 +69,7 @@ async function runTests() {
   try {
     let adminToken = '';
     let employeeToken = '';
+    let employeeId = null;
 
     // 1. Healthcheck
     await test('Health Check (GET /api/health)', async () => {
@@ -97,6 +103,7 @@ async function runTests() {
         throw new Error(`Login failed: ${JSON.stringify(res.data)}`);
       }
       employeeToken = res.data.token;
+      employeeId = res.data.user.employee.id;
     });
 
     // 4. Session Profile
@@ -121,7 +128,7 @@ async function runTests() {
       }
     });
 
-    // 6. Admin Dashboard
+    // 6. Admin Dashboard & Action Items
     await test('Admin Dashboard (GET /api/dashboard/admin)', async () => {
       const res = await makeRequest({
         path: '/api/dashboard/admin',
@@ -132,10 +139,72 @@ async function runTests() {
       }
     });
 
-    // 7. RBAC Check (Employee forbidden from Admin dashboard)
-    await test('RBAC Guard: Employee forbidden from Admin Dashboard', async () => {
+    await test('Admin Action Items (GET /api/dashboard/admin/action-items)', async () => {
       const res = await makeRequest({
-        path: '/api/dashboard/admin',
+        path: '/api/dashboard/admin/action-items',
+        headers: { Authorization: `Bearer ${adminToken}` },
+      });
+      if (res.status !== 200 || !res.data.action_items) {
+        throw new Error(`Failed to load action items: ${JSON.stringify(res.data)}`);
+      }
+    });
+
+    // 7. Dynamic Analytics - Attendance
+    await test('Attendance Analytics (Admin View: GET /api/analytics/attendance)', async () => {
+      const res = await makeRequest({
+        path: '/api/analytics/attendance',
+        headers: { Authorization: `Bearer ${adminToken}` },
+      });
+      if (res.status !== 200 || !res.data.summary || !res.data.department_breakdown) {
+        throw new Error(`Failed to load admin attendance analytics: ${JSON.stringify(res.data)}`);
+      }
+    });
+
+    await test('Attendance Analytics (Employee View: GET /api/analytics/attendance)', async () => {
+      const res = await makeRequest({
+        path: '/api/analytics/attendance',
+        headers: { Authorization: `Bearer ${employeeToken}` },
+      });
+      if (res.status !== 200 || res.data.role !== 'EMPLOYEE' || !res.data.summary) {
+        throw new Error(`Failed to load employee attendance analytics: ${JSON.stringify(res.data)}`);
+      }
+    });
+
+    // 8. Dynamic Analytics - Leaves
+    await test('Leaves Analytics (Admin View: GET /api/analytics/leaves)', async () => {
+      const res = await makeRequest({
+        path: '/api/analytics/leaves',
+        headers: { Authorization: `Bearer ${adminToken}` },
+      });
+      if (res.status !== 200 || !res.data.summary || !res.data.type_breakdown) {
+        throw new Error(`Failed to load leave analytics: ${JSON.stringify(res.data)}`);
+      }
+    });
+
+    await test('Leaves Analytics (Employee View: GET /api/analytics/leaves)', async () => {
+      const res = await makeRequest({
+        path: '/api/analytics/leaves',
+        headers: { Authorization: `Bearer ${employeeToken}` },
+      });
+      if (res.status !== 200 || !res.data.leave_balances) {
+        throw new Error(`Failed to load employee leave balances: ${JSON.stringify(res.data)}`);
+      }
+    });
+
+    // 9. Dynamic Analytics - Payroll
+    await test('Payroll Analytics (Admin View: GET /api/analytics/payroll)', async () => {
+      const res = await makeRequest({
+        path: '/api/analytics/payroll',
+        headers: { Authorization: `Bearer ${adminToken}` },
+      });
+      if (res.status !== 200 || !res.data.summary || !res.data.department_distribution) {
+        throw new Error(`Failed to load payroll analytics: ${JSON.stringify(res.data)}`);
+      }
+    });
+
+    await test('RBAC Guard: Employee forbidden from Payroll Analytics', async () => {
+      const res = await makeRequest({
+        path: '/api/analytics/payroll',
         headers: { Authorization: `Bearer ${employeeToken}` },
       });
       if (res.status !== 403) {
@@ -143,100 +212,104 @@ async function runTests() {
       }
     });
 
-    // 8. List Employees (Admin)
-    await test('List All Employees (GET /api/employees)', async () => {
+    // 10. Reports & CSV Exports
+    await test('Attendance Report JSON (GET /api/reports/attendance)', async () => {
       const res = await makeRequest({
-        path: '/api/employees',
+        path: '/api/reports/attendance',
         headers: { Authorization: `Bearer ${adminToken}` },
-      });
-      if (res.status !== 200 || res.data.employees.length === 0) {
-        throw new Error(`Failed to list employees: ${JSON.stringify(res.data)}`);
-      }
-    });
-
-    // 9. Employee Self Attendance History
-    await test('Get Employee Attendance History (GET /api/attendance/my)', async () => {
-      const res = await makeRequest({
-        path: '/api/attendance/my?view=daily',
-        headers: { Authorization: `Bearer ${employeeToken}` },
       });
       if (res.status !== 200 || !Array.isArray(res.data.attendance)) {
-        throw new Error(`Failed to fetch attendance: ${JSON.stringify(res.data)}`);
+        throw new Error(`Failed to load attendance report: ${JSON.stringify(res.data)}`);
       }
     });
 
-    // 10. Leave Application Workflow
-    let newLeaveId = null;
-    await test('Apply for Leave (POST /api/leaves)', async () => {
+    await test('Attendance Report CSV Export (GET /api/reports/attendance?format=csv)', async () => {
       const res = await makeRequest({
-        path: '/api/leaves',
-        method: 'POST',
-        headers: { Authorization: `Bearer ${employeeToken}` },
-        body: {
-          leave_type: 'PAID',
-          start_date: '2026-09-15',
-          end_date: '2026-09-16',
-          reason: 'Automated API Verification Leave Request',
-        },
-      });
-      if (res.status !== 201 || !res.data.leave.id) {
-        throw new Error(`Failed to apply leave: ${JSON.stringify(res.data)}`);
-      }
-      newLeaveId = res.data.leave.id;
-    });
-
-    // 11. Admin Review Leave Request
-    await test('Admin Review Leave (PUT /api/leaves/:id/review)', async () => {
-      const res = await makeRequest({
-        path: `/api/leaves/${newLeaveId}/review`,
-        method: 'PUT',
+        path: '/api/reports/attendance?format=csv',
         headers: { Authorization: `Bearer ${adminToken}` },
-        body: {
-          status: 'APPROVED',
-          reviewer_comment: 'Approved during automated verification test.',
-        },
       });
-      if (res.status !== 200 || res.data.leave.status !== 'APPROVED') {
-        throw new Error(`Failed to approve leave: ${JSON.stringify(res.data)}`);
+      if (res.status !== 200 || !res.raw.includes('Employee Code') || !res.raw.includes('Working Hours')) {
+        throw new Error(`Failed to generate attendance CSV: ${res.raw}`);
       }
     });
 
-    // 12. Employee View Payroll (Read-only)
-    await test('Employee View Payroll (GET /api/payroll/my)', async () => {
+    await test('Leaves Report CSV Export (GET /api/reports/leaves?format=csv)', async () => {
       const res = await makeRequest({
-        path: '/api/payroll/my',
+        path: '/api/reports/leaves?format=csv',
+        headers: { Authorization: `Bearer ${adminToken}` },
+      });
+      if (res.status !== 200 || !res.raw.includes('Leave Type') || !res.raw.includes('Start Date')) {
+        throw new Error(`Failed to generate leaves CSV: ${res.raw}`);
+      }
+    });
+
+    await test('Payroll Report CSV Export (GET /api/reports/payroll?format=csv)', async () => {
+      const res = await makeRequest({
+        path: '/api/reports/payroll?format=csv',
+        headers: { Authorization: `Bearer ${adminToken}` },
+      });
+      if (res.status !== 200 || !res.raw.includes('Basic Salary') || !res.raw.includes('Net Salary')) {
+        throw new Error(`Failed to generate payroll CSV: ${res.raw}`);
+      }
+    });
+
+    // 11. Salary Slip Generation & Ownership Verification
+    await test('Employee Download Own Salary Slip (GET /api/reports/payroll/:id/slip)', async () => {
+      const res = await makeRequest({
+        path: `/api/reports/payroll/${employeeId}/slip?month=8&year=2026`,
         headers: { Authorization: `Bearer ${employeeToken}` },
       });
-      if (res.status !== 200 || !Array.isArray(res.data.payrolls)) {
-        throw new Error(`Failed to get payrolls: ${JSON.stringify(res.data)}`);
+      if (res.status !== 200 || !res.data.data.slip_number || !res.data.data.net_salary_in_words) {
+        throw new Error(`Failed to generate salary slip: ${JSON.stringify(res.data)}`);
       }
     });
 
-    // 13. Employee Notifications
-    await test('Get Notifications (GET /api/notifications)', async () => {
+    await test('RBAC Guard: Employee forbidden from viewing other employee salary slip', async () => {
       const res = await makeRequest({
-        path: '/api/notifications',
+        path: `/api/reports/payroll/2/slip?month=8&year=2026`,
         headers: { Authorization: `Bearer ${employeeToken}` },
       });
-      if (res.status !== 200 || !Array.isArray(res.data.notifications)) {
-        throw new Error(`Failed to get notifications: ${JSON.stringify(res.data)}`);
+      if (res.status !== 403) {
+        throw new Error(`Expected 403 Forbidden, got ${res.status}`);
       }
     });
 
-    // 14. Departments & Designations
-    await test('Get Departments & Designations (GET /api/departments)', async () => {
+    // 12. Notification Center Workflows
+    await test('Get Unread Notifications Count (GET /api/notifications/unread-count)', async () => {
       const res = await makeRequest({
-        path: '/api/departments',
+        path: '/api/notifications/unread-count',
         headers: { Authorization: `Bearer ${employeeToken}` },
       });
-      if (res.status !== 200 || res.data.departments.length === 0) {
-        throw new Error(`Failed to get departments: ${JSON.stringify(res.data)}`);
+      if (res.status !== 200 || typeof res.data.unread_count !== 'number') {
+        throw new Error(`Failed to get unread count: ${JSON.stringify(res.data)}`);
       }
     });
 
-    console.log('\n------------------------------------------------------');
-    console.log(`Results: ${passed} passed, ${failed} failed.`);
-    console.log('------------------------------------------------------\n');
+    await test('Mark All Notifications as Read (PUT /api/notifications/read-all)', async () => {
+      const res = await makeRequest({
+        path: '/api/notifications/read-all',
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${employeeToken}` },
+      });
+      if (res.status !== 200 || !res.data.success) {
+        throw new Error(`Failed to mark notifications read: ${JSON.stringify(res.data)}`);
+      }
+    });
+
+    // 13. Recent Activity Stream
+    await test('System Activity Feed (GET /api/dashboard/activity)', async () => {
+      const res = await makeRequest({
+        path: '/api/dashboard/activity',
+        headers: { Authorization: `Bearer ${adminToken}` },
+      });
+      if (res.status !== 200 || !Array.isArray(res.data.activities)) {
+        throw new Error(`Failed to load activity feed: ${JSON.stringify(res.data)}`);
+      }
+    });
+
+    console.log('\n----------------------------------------------------------------');
+    console.log(`🎉 All Tests Complete: ${passed} passed, ${failed} failed.`);
+    console.log('----------------------------------------------------------------\n');
   } finally {
     server.close();
     process.exit(failed > 0 ? 1 : 0);

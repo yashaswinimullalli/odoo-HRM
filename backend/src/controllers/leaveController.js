@@ -1,6 +1,7 @@
 const { pool } = require('../config/db');
 const { logAudit } = require('../utils/auditLogger');
-const { sendNotification } = require('../utils/notifier');
+const { sendNotification, notifyRoles } = require('../utils/notifier');
+const { getLeaveEmailTemplate } = require('../services/emailService');
 
 /**
  * Apply for a leave request (Employee)
@@ -61,14 +62,14 @@ const applyLeave = async (req, res, next) => {
     });
 
     // Notify HR / Admins of new pending leave request
-    const hrUsersRes = await pool.query("SELECT id FROM users WHERE role IN ('ADMIN', 'HR')");
-    for (const hr of hrUsersRes.rows) {
-      await sendNotification({
-        userId: hr.id,
-        title: 'New Leave Request',
-        message: `${req.user.first_name || 'An employee'} (${req.user.employee_code}) requested ${leave_type} leave from ${start_date} to ${end_date}.`,
-      });
-    }
+    const employeeName = req.user.first_name ? `${req.user.first_name} ${req.user.last_name || ''}`.trim() : 'An employee';
+    await notifyRoles(['ADMIN', 'HR'], {
+      title: 'New Leave Request',
+      message: `${employeeName} (${req.user.employee_code || 'Employee'}) requested ${leave_type} leave from ${start_date} to ${end_date}.`,
+      notificationType: 'LEAVE_SUBMITTED',
+      relatedEntityType: 'LEAVE',
+      relatedEntityId: leave.id,
+    });
 
     res.status(201).json({
       success: true,
@@ -202,7 +203,7 @@ const reviewLeave = async (req, res, next) => {
 
     // Get current leave details
     const leaveCheck = await client.query(
-      `SELECT l.*, e.user_id, e.employee_code 
+      `SELECT l.*, e.user_id, e.employee_code, e.first_name, e.last_name 
        FROM leaves l 
        JOIN employees e ON l.employee_id = e.id 
        WHERE l.id = $1`,
@@ -265,13 +266,27 @@ const reviewLeave = async (req, res, next) => {
       ipAddress: req.ip,
     });
 
-    // Notify employee of review outcome
+    // Notify employee of review outcome with HTML email template
+    const employeeFullName = `${leave.first_name || ''} ${leave.last_name || ''}`.trim() || 'Team Member';
+    const emailHtml = getLeaveEmailTemplate({
+      employeeName: employeeFullName,
+      leaveType: leave.leave_type,
+      startDate: leave.start_date,
+      endDate: leave.end_date,
+      status: status.toUpperCase(),
+      reviewerComment: reviewer_comment,
+    });
+
     await sendNotification({
       userId: leave.user_id,
       title: `Leave Request ${status.toUpperCase() === 'APPROVED' ? 'Approved' : 'Rejected'}`,
       message: `Your ${leave.leave_type} leave (${leave.start_date} to ${leave.end_date}) was ${status.toLowerCase()}.${
         reviewer_comment ? ` Remarks: "${reviewer_comment}"` : ''
       }`,
+      notificationType: status.toUpperCase() === 'APPROVED' ? 'LEAVE_APPROVED' : 'LEAVE_REJECTED',
+      relatedEntityType: 'LEAVE',
+      relatedEntityId: id,
+      emailHtml,
     });
 
     res.json({

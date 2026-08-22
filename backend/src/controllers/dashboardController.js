@@ -58,7 +58,7 @@ const getEmployeeDashboard = async (req, res, next) => {
 
     // 5. Unread Notifications / Alerts
     const notificationsRes = await pool.query(
-      `SELECT id, title, message, is_read, created_at 
+      `SELECT id, title, message, notification_type, is_read, created_at 
        FROM notifications 
        WHERE user_id = $1 
        ORDER BY created_at DESC 
@@ -191,7 +191,149 @@ const getAdminDashboard = async (req, res, next) => {
   }
 };
 
+/**
+ * Admin / HR Action Items Feed
+ * Aggregates urgent pending decisions across HR operations (Leaves, Absences, Incomplete Profiles, Unprocessed Payrolls)
+ */
+const getAdminActionItems = async (req, res, next) => {
+  try {
+    // 1. Pending Leave Approvals
+    const pendingLeavesRes = await pool.query(`
+      SELECT 
+        l.id,
+        l.employee_id,
+        e.employee_code,
+        e.first_name || ' ' || e.last_name AS employee_name,
+        d.name AS department_name,
+        l.leave_type,
+        l.start_date,
+        l.end_date,
+        (l.end_date - l.start_date + 1) AS total_days,
+        l.reason,
+        l.created_at,
+        'LEAVE_APPROVAL' AS item_type,
+        'HIGH' AS priority
+      FROM leaves l
+      JOIN employees e ON l.employee_id = e.id
+      LEFT JOIN departments d ON e.department_id = d.id
+      WHERE l.status = 'PENDING'
+      ORDER BY l.created_at ASC
+    `);
+
+    // 2. Unexplained Absences Today
+    const todayAbsencesRes = await pool.query(`
+      SELECT 
+        a.id AS attendance_id,
+        e.id AS employee_id,
+        e.employee_code,
+        e.first_name || ' ' || e.last_name AS employee_name,
+        d.name AS department_name,
+        a.date,
+        'UNEXPLAINED_ABSENCE' AS item_type,
+        'MEDIUM' AS priority
+      FROM attendances a
+      JOIN employees e ON a.employee_id = e.id
+      LEFT JOIN departments d ON e.department_id = d.id
+      WHERE a.date = CURRENT_DATE AND a.status = 'ABSENT'
+    `);
+
+    // 3. Incomplete Employee Profiles (Missing bank info or PAN or emergency contact)
+    const incompleteProfilesRes = await pool.query(`
+      SELECT 
+        e.id AS employee_id,
+        e.employee_code,
+        e.first_name || ' ' || e.last_name AS employee_name,
+        d.name AS department_name,
+        CASE 
+          WHEN e.bank_account_number IS NULL OR e.bank_account_number = '' THEN 'Missing Bank Account'
+          WHEN e.pan_number IS NULL OR e.pan_number = '' THEN 'Missing PAN Card'
+          WHEN e.emergency_contact_phone IS NULL OR e.emergency_contact_phone = '' THEN 'Missing Emergency Contact'
+          ELSE 'Incomplete Profile'
+        END AS missing_detail,
+        'PROFILE_COMPLIANCE' AS item_type,
+        'LOW' AS priority
+      FROM employees e
+      LEFT JOIN departments d ON e.department_id = d.id
+      WHERE e.employment_status = 'ACTIVE' 
+        AND (e.bank_account_number IS NULL OR e.pan_number IS NULL OR e.emergency_contact_phone IS NULL)
+      LIMIT 10
+    `);
+
+    // 4. Unconfigured Salary Structures
+    const unconfiguredSalariesRes = await pool.query(`
+      SELECT 
+        e.id AS employee_id,
+        e.employee_code,
+        e.first_name || ' ' || e.last_name AS employee_name,
+        d.name AS department_name,
+        'SALARY_SETUP' AS item_type,
+        'HIGH' AS priority
+      FROM employees e
+      LEFT JOIN salary_structures s ON e.id = s.employee_id
+      LEFT JOIN departments d ON e.department_id = d.id
+      WHERE e.employment_status = 'ACTIVE' AND s.id IS NULL
+    `);
+
+    const totalActionItems =
+      pendingLeavesRes.rows.length +
+      todayAbsencesRes.rows.length +
+      incompleteProfilesRes.rows.length +
+      unconfiguredSalariesRes.rows.length;
+
+    res.json({
+      success: true,
+      total_action_items: totalActionItems,
+      action_items: {
+        pending_leaves: pendingLeavesRes.rows,
+        today_absences: todayAbsencesRes.rows,
+        incomplete_profiles: incompleteProfilesRes.rows,
+        unconfigured_salaries: unconfiguredSalariesRes.rows,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * Recent Activity Feed
+ */
+const getRecentActivities = async (req, res, next) => {
+  try {
+    const { limit = 20, offset = 0 } = req.query;
+
+    const query = `
+      SELECT 
+        a.id,
+        a.user_id,
+        u.email AS user_email,
+        u.role AS user_role,
+        a.action,
+        a.entity_type,
+        a.entity_id,
+        a.details,
+        a.ip_address,
+        a.created_at
+      FROM audit_logs a
+      LEFT JOIN users u ON a.user_id = u.id
+      ORDER BY a.created_at DESC
+      LIMIT $1 OFFSET $2
+    `;
+    const result = await pool.query(query, [parseInt(limit, 10), parseInt(offset, 10)]);
+
+    res.json({
+      success: true,
+      count: result.rows.length,
+      activities: result.rows,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   getEmployeeDashboard,
   getAdminDashboard,
+  getAdminActionItems,
+  getRecentActivities,
 };

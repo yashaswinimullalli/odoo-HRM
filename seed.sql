@@ -316,24 +316,26 @@ INSERT INTO documents (employee_id, document_name, document_type, document_url, 
 -- ----------------------------------------------------------------------------
 -- 10. Insert Notifications (Email & Notification Alerts)
 -- ----------------------------------------------------------------------------
-INSERT INTO notifications (user_id, title, message, is_read, created_at) VALUES
+INSERT INTO notifications (
+    user_id, title, message, notification_type, related_entity_type, related_entity_id, is_read, created_at
+) VALUES
 -- HR/Admin notifications
-(2, 'Leave Request Awaiting Review', 'Rohan Mehta (EMP003) submitted a Paid Leave request for Sep 1 - Sep 3.', FALSE, '2026-08-20 10:15:00+05:30'),
-(2, 'Leave Request Awaiting Review', 'Sneha Iyer (EMP006) submitted a Sick Leave request for Aug 24 - Aug 25.', FALSE, '2026-08-21 09:30:00+05:30'),
-(2, 'August Payroll Batch Ready', 'August 2026 payroll batch calculation completed. 9 records processed, 1 pending review.', TRUE, '2026-08-21 17:45:00+05:30'),
-(1, 'System Audit Alert', 'New employee profile and salary structure configured for EMP010.', TRUE, '2026-08-18 11:20:00+05:30'),
+(2, 'Leave Request Awaiting Review', 'Rohan Mehta (EMP003) submitted a Paid Leave request for Sep 1 - Sep 3.', 'LEAVE_SUBMITTED', 'LEAVE', '1', FALSE, '2026-08-20 10:15:00+05:30'),
+(2, 'Leave Request Awaiting Review', 'Sneha Iyer (EMP006) submitted a Sick Leave request for Aug 24 - Aug 25.', 'LEAVE_SUBMITTED', 'LEAVE', '5', FALSE, '2026-08-21 09:30:00+05:30'),
+(2, 'August Payroll Batch Ready', 'August 2026 payroll batch calculation completed. 9 records processed, 1 pending review.', 'PAYROLL_UPDATED', 'PAYROLL', '2026_8', TRUE, '2026-08-21 17:45:00+05:30'),
+(1, 'System Audit Alert', 'New employee profile and salary structure configured for EMP010.', 'GENERAL', 'EMPLOYEE', '12', TRUE, '2026-08-18 11:20:00+05:30'),
 
 -- Employee notifications
-(3, 'Leave Approved', 'Your Paid Leave for Jul 16 - Jul 17 has been approved by Priya Menon.', TRUE, '2026-07-14 10:00:00+05:30'),
-(3, 'Salary Credited', 'Your salary for the month of July 2026 (INR 65,000) has been processed.', TRUE, '2026-07-31 18:00:00+05:30'),
-(4, 'Leave Approved', 'Your Paid Leave for Jul 22 - Jul 23 has been approved.', TRUE, '2026-07-20 11:15:00+05:30'),
-(4, 'Attendance Reminder', 'Please remember to punch in before 09:30 AM to maintain punctuality.', FALSE, '2026-08-22 08:30:00+05:30'),
-(5, 'Attendance Marked', 'You checked in today at 09:05 AM. Have a productive day!', TRUE, '2026-08-12 09:05:00+05:30'),
-(6, 'Leave Approved', 'Your Sick Leave for Aug 10 - Aug 11 has been approved by Meera Joshi.', TRUE, '2026-08-09 16:30:00+05:30'),
-(9, 'Leave Request Rejected', 'Your Unpaid Leave for Aug 25 - Aug 28 was rejected. Comment: Critical quarter-end sales drive.', FALSE, '2026-08-15 14:05:00+05:30'),
-(10, 'Leave Approved', 'Your Sick Leave for Aug 5 has been approved.', TRUE, '2026-08-05 08:30:00+05:30'),
-(11, 'Leave Request Rejected', 'Your Unpaid Leave for Aug 18 - Aug 20 was rejected due to client demos.', TRUE, '2026-08-14 17:10:00+05:30'),
-(12, 'Salary Structure Updated', 'Your revised annual CTC and monthly salary breakdown has been updated in the portal.', TRUE, '2026-08-01 10:00:00+05:30');
+(3, 'Leave Approved', 'Your Paid Leave for Jul 16 - Jul 17 has been approved by Priya Menon.', 'LEAVE_APPROVED', 'LEAVE', '6', TRUE, '2026-07-14 10:00:00+05:30'),
+(3, 'Salary Credited', 'Your salary for the month of July 2026 (INR 65,000) has been processed.', 'PAYROLL_UPDATED', 'PAYROLL', '1', TRUE, '2026-07-31 18:00:00+05:30'),
+(4, 'Leave Approved', 'Your Paid Leave for Jul 22 - Jul 23 has been approved.', 'LEAVE_APPROVED', 'LEAVE', '3', TRUE, '2026-07-20 11:15:00+05:30'),
+(4, 'Attendance Reminder', 'Please remember to punch in before 09:30 AM to maintain punctuality.', 'ATTENDANCE', 'ATTENDANCE', NULL, FALSE, '2026-08-22 08:30:00+05:30'),
+(5, 'Attendance Marked', 'You checked in today at 09:05 AM. Have a productive day!', 'ATTENDANCE', 'ATTENDANCE', NULL, TRUE, '2026-08-12 09:05:00+05:30'),
+(6, 'Leave Approved', 'Your Sick Leave for Aug 10 - Aug 11 has been approved by Meera Joshi.', 'LEAVE_APPROVED', 'LEAVE', '2', TRUE, '2026-08-09 16:30:00+05:30'),
+(9, 'Leave Request Rejected', 'Your Unpaid Leave for Aug 25 - Aug 28 was rejected. Comment: Critical quarter-end sales drive.', 'LEAVE_REJECTED', 'LEAVE', '4', FALSE, '2026-08-15 14:05:00+05:30'),
+(10, 'Leave Approved', 'Your Sick Leave for Aug 5 has been approved.', 'LEAVE_APPROVED', 'LEAVE', '8', TRUE, '2026-08-05 08:30:00+05:30'),
+(11, 'Leave Request Rejected', 'Your Unpaid Leave for Aug 18 - Aug 20 was rejected due to client demos.', 'LEAVE_REJECTED', 'LEAVE', '9', TRUE, '2026-08-14 17:10:00+05:30'),
+(12, 'Salary Structure Updated', 'Your revised annual CTC and monthly salary breakdown has been updated in the portal.', 'PAYROLL_UPDATED', 'SALARY_STRUCTURE', '12', TRUE, '2026-08-01 10:00:00+05:30');
 
 -- ----------------------------------------------------------------------------
 -- 11. Insert Audit / Activity Logs (Dashboard Recent Activities & System Audit)

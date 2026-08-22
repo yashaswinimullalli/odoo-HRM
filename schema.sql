@@ -221,6 +221,9 @@ CREATE TABLE IF NOT EXISTS notifications (
     user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     title VARCHAR(255) NOT NULL,
     message TEXT NOT NULL,
+    notification_type VARCHAR(50) NOT NULL DEFAULT 'GENERAL', -- e.g. LEAVE_SUBMITTED, LEAVE_APPROVED, LEAVE_REJECTED, ATTENDANCE, PAYROLL_UPDATED
+    related_entity_type VARCHAR(50), -- e.g. LEAVE, ATTENDANCE, PAYROLL, EMPLOYEE, USER
+    related_entity_id VARCHAR(50),
     is_read BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -255,10 +258,12 @@ CREATE INDEX IF NOT EXISTS idx_employees_designation ON employees(designation_id
 CREATE INDEX IF NOT EXISTS idx_attendances_employee_date ON attendances(employee_id, date);
 CREATE INDEX IF NOT EXISTS idx_attendances_status ON attendances(status);
 CREATE INDEX IF NOT EXISTS idx_attendances_date_range ON attendances(date);
+CREATE INDEX IF NOT EXISTS idx_attendances_status_date ON attendances(status, date);
 
 CREATE INDEX IF NOT EXISTS idx_leaves_employee_id ON leaves(employee_id);
 CREATE INDEX IF NOT EXISTS idx_leaves_status ON leaves(status);
 CREATE INDEX IF NOT EXISTS idx_leaves_dates ON leaves(start_date, end_date);
+CREATE INDEX IF NOT EXISTS idx_leaves_type ON leaves(leave_type);
 
 CREATE INDEX IF NOT EXISTS idx_payrolls_employee_period ON payrolls(employee_id, year, month);
 CREATE INDEX IF NOT EXISTS idx_payrolls_status ON payrolls(payment_status);
@@ -266,6 +271,8 @@ CREATE INDEX IF NOT EXISTS idx_payrolls_status ON payrolls(payment_status);
 CREATE INDEX IF NOT EXISTS idx_documents_employee_id ON documents(employee_id);
 
 CREATE INDEX IF NOT EXISTS idx_notifications_user_unread ON notifications(user_id, is_read);
+CREATE INDEX IF NOT EXISTS idx_notifications_type ON notifications(notification_type);
+CREATE INDEX IF NOT EXISTS idx_notifications_created_at ON notifications(created_at DESC);
 
 CREATE INDEX IF NOT EXISTS idx_audit_logs_user_action ON audit_logs(user_id, action);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs(created_at DESC);

@@ -11,6 +11,8 @@ const documentRoutes = require('./documentRoutes');
 const notificationRoutes = require('./notificationRoutes');
 const auditRoutes = require('./auditRoutes');
 const departmentRoutes = require('./departmentRoutes');
+const analyticsRoutes = require('./analyticsRoutes');
+const reportRoutes = require('./reportRoutes');
 
 // Mount routes
 router.use('/auth', authRoutes);
@@ -22,6 +24,9 @@ router.use('/payroll', payrollRoutes);
 router.use('/documents', documentRoutes);
 router.use('/notifications', notificationRoutes);
 router.use('/audit-logs', auditRoutes);
+router.use('/activity', auditRoutes);
 router.use('/departments', departmentRoutes);
+router.use('/analytics', analyticsRoutes);
+router.use('/reports', reportRoutes);
 
 module.exports = router;
