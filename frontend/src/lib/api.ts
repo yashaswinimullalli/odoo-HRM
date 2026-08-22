@@ -5,8 +5,11 @@
 
 import { UserProfile, AttendanceRecord, LeaveRecord, PayrollRecord, Notification } from "./types";
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "https://odoo-hrm.onrender.com/api";
+let rawApiUrl = process.env.NEXT_PUBLIC_API_URL || "https://odoo-hrm.onrender.com/api";
+if (!rawApiUrl.endsWith("/api")) {
+  rawApiUrl = rawApiUrl.replace(/\/+$/, "") + "/api";
+}
+const API_BASE_URL = rawApiUrl;
 const TOKEN_KEY = "dayflow_auth_token";
 
 export const getAuthToken = (): string | null => {

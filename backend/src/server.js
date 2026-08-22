@@ -58,8 +58,9 @@ app.get('/api/health', async (req, res) => {
   }
 });
 
-// API Routes
+// API Routes (Mounted on both /api and root for universal client compatibility)
 app.use('/api', apiRoutes);
+app.use('/', apiRoutes);
 
 // Global Error Handler
 app.use(errorHandler);
