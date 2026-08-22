@@ -2,21 +2,18 @@ const { pool } = require('../config/db');
 
 /**
  * Get current user's notifications / alerts with filtering and pagination
- * Query params: unread_only (boolean), type (string), limit (number), offset (number)
  */
 const getMyNotifications = async (req, res, next) => {
   try {
     const userId = req.user.user_id;
-    const { unread_only, type, limit = 50, offset = 0 } = req.query;
+    const { unread_only, limit = 50, offset = 0 } = req.query;
 
     let query = `
       SELECT 
         id, 
+        user_id,
         title, 
         message, 
-        notification_type, 
-        related_entity_type, 
-        related_entity_id, 
         is_read, 
         created_at
       FROM notifications
@@ -26,11 +23,6 @@ const getMyNotifications = async (req, res, next) => {
 
     if (unread_only === 'true') {
       query += ' AND is_read = FALSE';
-    }
-
-    if (type) {
-      params.push(type.toUpperCase());
-      query += ` AND notification_type = $${params.length}`;
     }
 
     query += ` ORDER BY created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
@@ -63,19 +55,18 @@ const getMyNotifications = async (req, res, next) => {
 };
 
 /**
- * Get just the unread notifications count for badge UI
+ * Get unread notification count only
  */
 const getUnreadCount = async (req, res, next) => {
   try {
     const userId = req.user.user_id;
-    const countRes = await pool.query(
+    const result = await pool.query(
       'SELECT COUNT(*) FROM notifications WHERE user_id = $1 AND is_read = FALSE',
       [userId]
     );
-
     res.json({
       success: true,
-      unread_count: parseInt(countRes.rows[0].count, 10),
+      unread_count: parseInt(result.rows[0].count, 10),
     });
   } catch (err) {
     next(err);
@@ -90,13 +81,10 @@ const markAsRead = async (req, res, next) => {
     const { id } = req.params;
     const userId = req.user.user_id;
 
-    const query = `
-      UPDATE notifications 
-      SET is_read = TRUE 
-      WHERE id = $1 AND user_id = $2
-      RETURNING id, title, is_read, notification_type
-    `;
-    const result = await pool.query(query, [id, userId]);
+    const result = await pool.query(
+      'UPDATE notifications SET is_read = TRUE WHERE id = $1 AND user_id = $2 RETURNING *',
+      [id, userId]
+    );
 
     if (result.rows.length === 0) {
       return res.status(404).json({ success: false, message: 'Notification not found.' });
@@ -118,7 +106,11 @@ const markAsRead = async (req, res, next) => {
 const markAllAsRead = async (req, res, next) => {
   try {
     const userId = req.user.user_id;
-    await pool.query('UPDATE notifications SET is_read = TRUE WHERE user_id = $1', [userId]);
+
+    await pool.query(
+      'UPDATE notifications SET is_read = TRUE WHERE user_id = $1',
+      [userId]
+    );
 
     res.json({
       success: true,
@@ -130,14 +122,17 @@ const markAllAsRead = async (req, res, next) => {
 };
 
 /**
- * Delete a notification
+ * Delete a specific notification
  */
 const deleteNotification = async (req, res, next) => {
   try {
     const { id } = req.params;
     const userId = req.user.user_id;
 
-    const result = await pool.query('DELETE FROM notifications WHERE id = $1 AND user_id = $2 RETURNING id', [id, userId]);
+    const result = await pool.query(
+      'DELETE FROM notifications WHERE id = $1 AND user_id = $2 RETURNING id',
+      [id, userId]
+    );
 
     if (result.rows.length === 0) {
       return res.status(404).json({ success: false, message: 'Notification not found.' });

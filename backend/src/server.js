@@ -12,54 +12,21 @@ dotenv.config({ path: path.resolve(__dirname, '../.env') });
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Configurable CORS for Development & Production
-const allowedOrigins = [
-  'http://localhost:3000',
-  'http://localhost:3001',
-  'http://localhost:5173',
-  'http://127.0.0.1:3000',
-  'http://127.0.0.1:3001',
-  'http://127.0.0.1:5173',
-];
+// Permissive and robust CORS middleware
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow all local development origins and any configured production frontend
+      callback(null, true);
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+  })
+);
 
-if (process.env.FRONTEND_URL) {
-  process.env.FRONTEND_URL.split(',').forEach((url) => {
-    const trimmed = url.trim();
-    if (trimmed && !allowedOrigins.includes(trimmed)) {
-      allowedOrigins.push(trimmed);
-    }
-  });
-}
+app.options('*', cors());
 
-if (process.env.CORS_ORIGIN) {
-  process.env.CORS_ORIGIN.split(',').forEach((url) => {
-    const trimmed = url.trim();
-    if (trimmed && !allowedOrigins.includes(trimmed)) {
-      allowedOrigins.push(trimmed);
-    }
-  });
-}
-
-const corsOptions = {
-  origin: (origin, callback) => {
-    // Allow requests with no origin (like mobile apps, curl, or Postman)
-    if (!origin) return callback(null, true);
-    
-    if (
-      process.env.NODE_ENV !== 'production' ||
-      allowedOrigins.includes(origin) ||
-      allowedOrigins.includes('*')
-    ) {
-      return callback(null, true);
-    }
-    return callback(new Error(`CORS blocked: ${origin} not allowed`));
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-};
-
-app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

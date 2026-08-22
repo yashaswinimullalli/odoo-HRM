@@ -58,7 +58,7 @@ const getEmployeeDashboard = async (req, res, next) => {
 
     // 5. Unread Notifications / Alerts
     const notificationsRes = await pool.query(
-      `SELECT id, title, message, notification_type, is_read, created_at 
+      `SELECT id, title, message, is_read, created_at 
        FROM notifications 
        WHERE user_id = $1 
        ORDER BY created_at DESC 

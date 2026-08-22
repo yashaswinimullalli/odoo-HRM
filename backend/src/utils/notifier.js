@@ -8,9 +8,6 @@ const { sendEmail } = require('../services/emailService');
  * @param {number|string} params.userId - Recipient User ID
  * @param {string} params.title - Notification title
  * @param {string} params.message - Notification body
- * @param {string} [params.notificationType='GENERAL'] - Type enum (e.g. LEAVE_SUBMITTED, LEAVE_APPROVED, LEAVE_REJECTED, ATTENDANCE, PAYROLL_UPDATED)
- * @param {string} [params.relatedEntityType] - Entity type (e.g. LEAVE, ATTENDANCE, PAYROLL, EMPLOYEE)
- * @param {string|number} [params.relatedEntityId] - Entity ID
  * @param {boolean} [params.sendEmailAlert=true] - Whether to also dispatch an email alert
  * @param {string} [params.emailHtml] - Custom HTML content for email alert
  */
@@ -18,25 +15,19 @@ async function sendNotification({
   userId,
   title,
   message,
-  notificationType = 'GENERAL',
-  relatedEntityType = null,
-  relatedEntityId = null,
   sendEmailAlert = true,
   emailHtml = null,
 }) {
   try {
     const query = `
-      INSERT INTO notifications (user_id, title, message, notification_type, related_entity_type, related_entity_id, is_read)
-      VALUES ($1, $2, $3, $4, $5, $6, FALSE)
-      RETURNING id, user_id, title, message, notification_type, created_at
+      INSERT INTO notifications (user_id, title, message, is_read)
+      VALUES ($1, $2, $3, FALSE)
+      RETURNING id, user_id, title, message, is_read, created_at
     `;
     const result = await pool.query(query, [
       userId,
       title,
       message,
-      notificationType,
-      relatedEntityType,
-      relatedEntityId ? String(relatedEntityId) : null,
     ]);
 
     // Send email alert asynchronously
@@ -66,7 +57,7 @@ async function sendNotification({
 /**
  * Notify all users belonging to specific role(s) (e.g., 'ADMIN', 'HR')
  */
-async function notifyRoles(roles, { title, message, notificationType, relatedEntityType, relatedEntityId, emailHtml }) {
+async function notifyRoles(roles, { title, message, emailHtml }) {
   try {
     const rolesArray = Array.isArray(roles) ? roles : [roles];
     const res = await pool.query(
@@ -80,9 +71,6 @@ async function notifyRoles(roles, { title, message, notificationType, relatedEnt
         userId: user.id,
         title,
         message,
-        notificationType,
-        relatedEntityType,
-        relatedEntityId,
         sendEmailAlert: true,
         emailHtml,
       });
