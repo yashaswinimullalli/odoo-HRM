@@ -199,7 +199,9 @@ const createEmployee = async (req, res, next) => {
       email,
       role = 'EMPLOYEE',
       department_id,
+      department_name,
       designation_id,
+      designation_title,
       joining_date,
       basic_salary,
       hra = 0,
@@ -210,6 +212,8 @@ const createEmployee = async (req, res, next) => {
       phone,
       address,
       company_name = 'Dayflow',
+      employee_code,
+      password,
     } = req.body;
 
     const fName = (first_name || '').trim();
@@ -231,16 +235,36 @@ const createEmployee = async (req, res, next) => {
       return res.status(409).json({ success: false, message: 'Email address already exists in system.' });
     }
 
-    // Auto-generate Login ID based on formula: [CompanyPrefix][First2First][First2Last][Year][Serial]
-    const loginId = await generateLoginId({
+    // Resolve department ID if name is provided
+    let finalDeptId = department_id;
+    if (!finalDeptId && department_name) {
+      const deptRes = await client.query(
+        `INSERT INTO departments (name) VALUES ($1) ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name RETURNING id`,
+        [department_name.trim()]
+      );
+      finalDeptId = deptRes.rows[0].id;
+    }
+
+    // Resolve designation ID if title is provided
+    let finalDesigId = designation_id;
+    if (!finalDesigId && designation_title) {
+      const desigRes = await client.query(
+        `INSERT INTO designations (department_id, title) VALUES ($1, $2) ON CONFLICT (department_id, title) DO UPDATE SET title = EXCLUDED.title RETURNING id`,
+        [finalDeptId || null, designation_title.trim()]
+      );
+      finalDesigId = desigRes.rows[0].id;
+    }
+
+    // Auto-generate Login ID based on formula if not provided
+    const loginId = employee_code || (await generateLoginId({
       companyName: company_name,
       firstName: fName,
       lastName: lName || '',
       joiningDate: joining_date || new Date(),
-    });
+    }));
 
-    // Auto-generate secure initial password
-    const tempPassword = generateTemporaryPassword();
+    // Auto-generate or use secure initial password
+    const tempPassword = password || generateTemporaryPassword();
     const passwordHash = await bcrypt.hash(tempPassword, 10);
 
     // Insert user
@@ -269,8 +293,8 @@ const createEmployee = async (req, res, next) => {
         date_of_birth || null,
         phone || null,
         address || null,
-        department_id || null,
-        designation_id || null,
+        finalDeptId || null,
+        finalDesigId || null,
         joining_date || new Date().toISOString().split('T')[0],
       ]
     );
@@ -398,17 +422,39 @@ const updateEmployeeByAdmin = async (req, res, next) => {
       phone,
       address,
       department_id,
+      department_name,
       designation_id,
+      designation_title,
       joining_date,
       profile_picture_url,
       employment_status,
       basic_salary,
-      hra,
-      allowances,
-      deductions,
+      hra = 0,
+      allowances = 0,
+      deductions = 0,
     } = req.body;
 
     await client.query('BEGIN');
+
+    // Resolve department ID if department name is provided
+    let finalDeptId = department_id;
+    if (!finalDeptId && department_name) {
+      const deptRes = await client.query(
+        `INSERT INTO departments (name) VALUES ($1) ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name RETURNING id`,
+        [department_name.trim()]
+      );
+      finalDeptId = deptRes.rows[0].id;
+    }
+
+    // Resolve designation ID if title is provided
+    let finalDesigId = designation_id;
+    if (!finalDesigId && designation_title) {
+      const desigRes = await client.query(
+        `INSERT INTO designations (department_id, title) VALUES ($1, $2) ON CONFLICT (department_id, title) DO UPDATE SET title = EXCLUDED.title RETURNING id`,
+        [finalDeptId || null, designation_title.trim()]
+      );
+      finalDesigId = desigRes.rows[0].id;
+    }
 
     const updateEmpQuery = `
       UPDATE employees 
@@ -435,8 +481,8 @@ const updateEmployeeByAdmin = async (req, res, next) => {
       date_of_birth,
       phone,
       address,
-      department_id,
-      designation_id,
+      finalDeptId,
+      finalDesigId,
       joining_date,
       profile_picture_url,
       employment_status,
@@ -455,12 +501,15 @@ const updateEmployeeByAdmin = async (req, res, next) => {
       const basic = parseFloat(basic_salary) || 0;
       const h = parseFloat(hra) || 0;
       const allow = parseFloat(allowances) || 0;
+      const ded = parseFloat(deductions) || 0;
+      const net = basic + h + allow - ded;
+
       await client.query(
         `INSERT INTO salary_structures (employee_id, basic_salary, hra, allowances, deductions, net_salary, currency)
          VALUES ($1, $2, $3, $4, $5, $6, 'INR')
          ON CONFLICT (employee_id) DO UPDATE 
          SET basic_salary = $2, hra = $3, allowances = $4, deductions = $5, net_salary = $6, updated_at = CURRENT_TIMESTAMP`,
-        [id, basic, h, allow, ded, net]
+        [updatedEmp.id, basic, h, allow, ded, net]
       );
     }
 
