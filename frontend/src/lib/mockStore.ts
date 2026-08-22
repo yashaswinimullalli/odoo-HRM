@@ -31,12 +31,23 @@ const genId = () => Math.random().toString(36).substring(2, 10);
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 
 export const mockLogin = (
-  email: string,
-  password: string
+  identifier: string,
+  password?: string
 ): UserProfile | null => {
-  // Any password works for demo (password = "password" for all users)
-  const user = users.find((u) => u.email.toLowerCase() === email.toLowerCase());
-  return user ?? null;
+  const key = identifier.toLowerCase().trim();
+  const user = users.find(
+    (u) =>
+      u.email.toLowerCase() === key ||
+      (u.employeeId && u.employeeId.toLowerCase() === key)
+  );
+
+  if (user) return user;
+
+  // Fallback demo user generator if offline/mock
+  if (key.includes("admin") || key.includes("priya")) {
+    return users.find((u) => u.role === "admin") || users[0];
+  }
+  return users.find((u) => u.role === "employee") || users[1] || users[0];
 };
 
 export const mockRegister = (data: {

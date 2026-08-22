@@ -30,6 +30,15 @@ app.options('*', cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Root welcome endpoint
+app.get('/', (req, res) => {
+  res.json({
+    status: 'ok',
+    app: 'Dayflow HRMS Backend REST API',
+    health: '/api/health',
+  });
+});
+
 // Health Check Endpoint (safe for monitoring, no secrets exposed)
 app.get('/api/health', async (req, res) => {
   try {
