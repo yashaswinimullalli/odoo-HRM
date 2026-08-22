@@ -171,36 +171,40 @@ export const api = {
 
   // Attendance
   getMyAttendance: async (view = "daily") => {
-    const res = await request<{ success: boolean; attendance: any[] }>(`/attendance/my?view=${view}`);
-    return res.attendance.map(mapBackendAttendance);
+    const res = await request<{ success: boolean; attendance?: any[]; data?: any[] }>(`/attendance/my?view=${view}`);
+    const list = res.attendance || res.data || [];
+    return list.map(mapBackendAttendance);
   },
 
   getAllAttendance: async (date?: string) => {
     const query = date ? `?date=${date}` : "";
-    const res = await request<{ success: boolean; attendance: any[] }>(`/attendance/all${query}`);
-    return res.attendance.map(mapBackendAttendance);
+    const res = await request<{ success: boolean; attendance?: any[]; data?: any[] }>(`/attendance/all${query}`);
+    const list = res.attendance || res.data || [];
+    return list.map(mapBackendAttendance);
   },
 
   checkIn: async () => {
-    const res = await request<{ success: boolean; attendance: any }>("/attendance/check-in", { method: "POST" });
-    return mapBackendAttendance(res.attendance);
+    const res = await request<{ success: boolean; attendance?: any; data?: any }>("/attendance/check-in", { method: "POST" });
+    return mapBackendAttendance(res.attendance || res.data);
   },
 
   checkOut: async () => {
-    const res = await request<{ success: boolean; attendance: any }>("/attendance/check-out", { method: "POST" });
-    return mapBackendAttendance(res.attendance);
+    const res = await request<{ success: boolean; attendance?: any; data?: any }>("/attendance/check-out", { method: "POST" });
+    return mapBackendAttendance(res.attendance || res.data);
   },
 
   // Leaves
   getMyLeaves: async () => {
-    const res = await request<{ success: boolean; leaves: any[] }>("/leaves/my");
-    return res.leaves.map(mapBackendLeave);
+    const res = await request<{ success: boolean; leaves?: any[]; data?: any[] }>("/leaves/my");
+    const list = res.leaves || res.data || [];
+    return list.map(mapBackendLeave);
   },
 
   getAllLeaves: async (status?: string) => {
     const query = status ? `?status=${status.toUpperCase()}` : "";
-    const res = await request<{ success: boolean; leaves: any[] }>(`/leaves${query}`);
-    return res.leaves.map(mapBackendLeave);
+    const res = await request<{ success: boolean; leaves?: any[]; data?: any[] }>(`/leaves${query}`);
+    const list = res.leaves || res.data || [];
+    return list.map(mapBackendLeave);
   },
 
   applyLeave: async (data: { leaveType: string; startDate: string; endDate: string; reason: string }) => {
@@ -212,7 +216,7 @@ export const api = {
       SICK: "SICK",
       UNPAID: "UNPAID",
     };
-    const res = await request<{ success: boolean; leave: any }>("/leaves", {
+    const res = await request<{ success: boolean; leave?: any; data?: any }>("/leaves", {
       method: "POST",
       body: JSON.stringify({
         leave_type: typeMap[data.leaveType] || "PAID",
@@ -221,21 +225,22 @@ export const api = {
         reason: data.reason,
       }),
     });
-    return mapBackendLeave(res.leave);
+    return mapBackendLeave(res.leave || res.data);
   },
 
   reviewLeave: async (leaveId: string, status: "APPROVED" | "REJECTED", comment?: string) => {
-    const res = await request<{ success: boolean; leave: any }>(`/leaves/${leaveId}/review`, {
+    const res = await request<{ success: boolean; leave?: any; data?: any }>(`/leaves/${leaveId}/review`, {
       method: "PUT",
       body: JSON.stringify({ status, reviewer_comment: comment }),
     });
-    return mapBackendLeave(res.leave);
+    return mapBackendLeave(res.leave || res.data);
   },
 
   // Payroll & Salary Slips
   getMyPayroll: async () => {
-    const res = await request<{ success: boolean; payrolls: any[] }>("/payroll/my");
-    return res.payrolls.map((p) => ({
+    const res = await request<{ success: boolean; payrolls?: any[]; data?: any[] }>("/payroll/my");
+    const list = res.payrolls || res.data || [];
+    return list.map((p) => ({
       id: String(p.id),
       userId: String(p.employee_id || ""),
       employeeId: p.employee_code || `EMP${p.employee_id || ""}`,
@@ -255,7 +260,7 @@ export const api = {
     if (month) params.append("month", String(month));
     if (year) params.append("year", String(year));
     const query = params.toString() ? `?${params.toString()}` : "";
-    return request<{ success: boolean; payrolls: any[]; summary: any }>(`/payroll${query}`);
+    return request<{ success: boolean; payrolls?: any[]; data?: any[]; summary: any }>(`/payroll${query}`);
   },
 
   getSalarySlip: async (employeeId: string, month: number, year: number) => {
@@ -264,10 +269,11 @@ export const api = {
 
   // Notifications
   getMyNotifications: async () => {
-    const res = await request<{ success: boolean; notifications: any[]; unread_count: number }>("/notifications");
+    const res = await request<{ success: boolean; notifications?: any[]; data?: any[]; unread_count?: number }>("/notifications");
+    const list = res.notifications || res.data || [];
     return {
-      unreadCount: res.unread_count,
-      notifications: res.notifications.map((n) => ({
+      unreadCount: res.unread_count || list.filter((n: any) => !n.is_read).length,
+      notifications: list.map((n: any) => ({
         id: String(n.id),
         userId: String(n.user_id),
         title: n.title,
@@ -289,37 +295,38 @@ export const api = {
 
   // Employees
   getEmployees: async () => {
-    const res = await request<{ success: boolean; employees: any[] }>("/employees");
-    return res.employees.map((e) => ({
+    const res = await request<{ success: boolean; employees?: any[]; data?: any[] }>("/employees");
+    const list = res.employees || res.data || [];
+    return list.map((e: any) => ({
       uid: String(e.id),
       fullName: `${e.first_name} ${e.last_name || ""}`.trim(),
       employeeId: e.employee_code,
       email: e.email,
-      role: e.user_role?.toLowerCase() === "admin" ? "admin" : "employee",
+      role: (e.user_role || e.role)?.toLowerCase() === "admin" ? "admin" : "employee",
       department: e.department_name || "General",
       designation: e.designation_title || "Specialist",
-      joiningDate: e.joining_date ? e.joining_date.split("T")[0] : "",
-      phone: e.phone_number || "",
-      address: e.current_address || "",
+      joiningDate: e.joining_date ? (typeof e.joining_date === "string" ? e.joining_date.split("T")[0] : new Date(e.joining_date).toISOString().split("T")[0]) : "",
+      phone: e.phone_number || e.phone || "",
+      address: e.current_address || e.address || "",
       employmentType: e.employment_status || "Full-time",
       emailVerified: true,
     }));
   },
 
   getEmployeeById: async (id: string) => {
-    const res = await request<{ success: boolean; employee: any }>(`/employees/${id}`);
-    const e = res.employee;
+    const res = await request<{ success: boolean; employee?: any; data?: any }>(`/employees/${id}`);
+    const e = res.employee || res.data || {};
     return {
       uid: String(e.id),
       fullName: `${e.first_name} ${e.last_name || ""}`.trim(),
       employeeId: e.employee_code,
       email: e.email,
-      role: e.user_role?.toLowerCase() === "admin" ? "admin" : "employee",
+      role: (e.user_role || e.role)?.toLowerCase() === "admin" ? "admin" : "employee",
       department: e.department_name || "General",
       designation: e.designation_title || "Specialist",
-      joiningDate: e.joining_date ? e.joining_date.split("T")[0] : "",
-      phone: e.phone_number || "",
-      address: e.current_address || "",
+      joiningDate: e.joining_date ? (typeof e.joining_date === "string" ? e.joining_date.split("T")[0] : new Date(e.joining_date).toISOString().split("T")[0]) : "",
+      phone: e.phone_number || e.phone || "",
+      address: e.current_address || e.address || "",
       employmentType: e.employment_status || "Full-time",
       salaryStructure: e.salary_structure,
       documents: e.documents || [],

@@ -9,6 +9,7 @@
     "db:migrate": "node src/scripts/migrate.js",
     "db:seed": "node src/scripts/seed.js",
     "db:setup": "node src/scripts/migrate.js && node src/scripts/seed.js",
+    "db:reset": "node src/scripts/reset.js",
     "test:api": "node src/scripts/testApi.js"
   },
   "dependencies": {

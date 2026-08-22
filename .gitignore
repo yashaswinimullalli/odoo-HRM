@@ -15,13 +15,16 @@ build/
 dist/
 coverage/
 
-# Environment Variables
+# Environment Variables (Ignore real secrets, keep .env.example templates)
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env.*
+!.env.example
 backend/.env
+backend/.env.*
+!backend/.env.example
+frontend/.env
+frontend/.env.*
+!frontend/.env.local.example
 
 # Logs & Debug
 npm-debug.log*
